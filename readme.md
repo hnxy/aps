@@ -1,21 +1,28 @@
-# Lumen PHP Framework
+# APS Framework
 
-[![Build Status](https://travis-ci.org/laravel/lumen-framework.svg)](https://travis-ci.org/laravel/lumen-framework)
-[![Total Downloads](https://poser.pugx.org/laravel/lumen-framework/d/total.svg)](https://packagist.org/packages/laravel/lumen-framework)
-[![Latest Stable Version](https://poser.pugx.org/laravel/lumen-framework/v/stable.svg)](https://packagist.org/packages/laravel/lumen-framework)
-[![Latest Unstable Version](https://poser.pugx.org/laravel/lumen-framework/v/unstable.svg)](https://packagist.org/packages/laravel/lumen-framework)
-[![License](https://poser.pugx.org/laravel/lumen-framework/license.svg)](https://packagist.org/packages/laravel/lumen-framework)
+### 当前主要框架或语言的版本
 
-Laravel Lumen is a stunningly fast PHP micro-framework for building web applications with expressive, elegant syntax. We believe development must be an enjoyable, creative experience to be truly fulfilling. Lumen attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as routing, database abstraction, queueing, and caching.
+1. Framework based on lumen core:  5.4
+3. php 7.0.10
+4. nginx 1.9.10
+5. mysql 5.7.10
 
-## Official Documentation
+### 简介
 
-Documentation for the framework can be found on the [Lumen website](http://lumen.laravel.com/docs).
+提供Http Restful Api接口给 Android ,Ios, Web前端使用
 
-## Security Vulnerabilities
+### 使用姿势--unix*(建议本地测试 virtualbox + vagrant)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
+1. Nginx虚拟主机[配置文件][1]
 
-## License
+2. php-fpm[配置文件][2]
 
-The Lumen framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)
+3. make install
+
+4. make build
+
+5. curl aps.cg0.me/ping
+
+
+[1]:https://github.com/hncg/conf/tree/master/nginx
+[2]:https://github.com/hncg/conf/tree/master/php
