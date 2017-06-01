@@ -45,6 +45,27 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $e)
     {
-        return parent::render($request, $e);
+        // 自定义处理参数验证异常,错误码为10000
+        if ($e instanceof ValidationException) {
+            $result = [
+                "msg" => $e->getResponse()->original,
+                "code" => 10000
+            ];
+            return response($result, 401);
+        // 处理自定义异常
+        } else if ($e instanceof ApiException) {
+            $result = [
+                "msg"    => $e->getMessage(),
+                "code" => $e->getCode()
+            ];
+            if ($e->http_code == 404) {
+                return response("", $e->http_code);
+            } else {
+                return response($result, $e->http_code);
+            }
+        } else {
+            // 交给框架自己的异常错误处理类去处理
+            return parent::render($request, $e);
+        }
     }
 }

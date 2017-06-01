@@ -1,16 +1,13 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Application Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register all of the routes for an application.
-| It is a breeze. Simply tell Lumen the URIs it should respond to
-| and give it the Closure to call when that URI is requested.
-|
-*/
+$app->get('/ping','PingController@ping');
 
-$app->get('/', function () use ($app) {
-    return $app->version();
+$app->group(['prefix' => '/v1'], function() use ($app) {
+    $app->group(['prefix' => '/user'], function() use ($app) {
+        $app->post('/login', 'UserController@login');
+    });
+    $app->group(['prefix' => '/user/{user_id}', 'where' => ['user_id' => '[0-9]+'], "middleware" => ["my_auth"]], function() use ($app) {
+        $app->get('/', 'UserController@get');
+    });
+
 });
