@@ -7,6 +7,6 @@ class PingController extends Controller
 
     public function ping()
     {
-        return 'ping is ok';
+        return 'ping is oxxxxxk';
     }
 }
