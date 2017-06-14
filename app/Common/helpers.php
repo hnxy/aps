@@ -39,4 +39,17 @@
     function genToken() {
         return password_hash(getRandomString(32), PASSWORD_DEFAULT);
     }
+    /**
+     * [getToken description]
+     * 获取请求的token, 优先从header中获取
+     * @author cg
+     * @param  [type] $request [description]
+     * @return [type]          [description]
+     */
+    function getToken($request) {
+        $header = $request->header();
+        $authorization = $request->header('authorization');
+        $token = $request->input('token');
+        return  $authorization ? $authorization : $token;
+    }
 ?>

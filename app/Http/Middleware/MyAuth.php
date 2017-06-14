@@ -22,7 +22,7 @@ class MyAuth
     {
         $userId = $request->route()[2]['user_id'];
         $user = User::get($userId);
-        $token = $request->input('token');
+        $token = getToken($request);
         $time = time();
         if (empty($user)) {
             throw new ApiException("", 1, 404);
