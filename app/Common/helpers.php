@@ -52,4 +52,97 @@
         $token = $request->input('token');
         return  $authorization ? $authorization : $token;
     }
+           /**
+     * 获取access_token
+     */
+    function get_basic_access_token($appid,$appSecret){
+        $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".$appid."&secret=".$appSecret;
+        $ch  = curl_init();
+        curl_setopt($ch,CURLOPT_URL,$url);
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+        curl_setopt($ch,CURLOPT_HEADER,0);
+        curl_setopt($ch,CURLOPT_TIMEOUT,10);
+        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,0);
+        $tmpStr = curl_exec($ch);
+        if (curl_errno($ch)) {
+            return 0;
+        }
+        $result = json_decode($tmpStr,true);
+        if(array_key_exists('errcode',$result)){
+            return 0;
+        }
+        else{
+            return $result['access_token'];
+        }
+    }
+    //获取网页授权的token
+    function get_web_access_token($appid,$appSecret,$code){
+        $rspMsg =array(
+            'state'=>0,
+            'msg'=>'success'
+        );
+        $baseUrl = 'https://api.weixin.qq.com/sns/oauth2/access_token?';
+        $queryParams = array(
+            'appid'=>$appid,
+            'secret'=>$appSecret,
+            'code'=>$code,
+            'grant_type'=>'authorization_code'
+        );
+        $url = $baseUrl.http_build_query($queryParams);
+        $ch = curl_init();
+        curl_setopt($ch,CURLOPT_URL,$url);
+        curl_setopt($ch,CURLOPT_HEADER,0);
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+        curl_setopt($ch,CURLOPT_TIMEOUT,10);
+        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+        $content = curl_exec($ch);
+        if(curl_errno($ch)){
+            $rspMsg['state'] = -1;
+            $rspMsg['msg'] = curl_error($ch);
+            return $rspMsg;
+        }
+        $result = json_decode($content,true);
+        if(array_key_exists('errcode',$result)){
+            $rspMsg['state'] = $result['errcode'];
+            $rspMsg['msg'] = $result['errmsg'];
+            return $rspMsg;
+        }
+        $rspMsg['msg'] = $result;
+        curl_close($ch);
+        return $rspMsg;
+    }
+    //获取用户信息
+    function get_user_info($web_access_token,$openid){
+            $rspMsg =array(
+                'state'=>0,
+                'msg'=>'success'
+            );
+           $parsms = array(
+               'access_token'=>$web_access_token,
+               'openid'=>$openid,
+               'lang'=>'zh_CN'
+           );
+           $url =  'https://api.weixin.qq.com/sns/userinfo?'.http_build_query($parsms);
+           $ch = curl_init();
+           curl_setopt($ch,CURLOPT_URL,$url);
+           curl_setopt($ch,CURLOPT_HEADER,0);
+           curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+           curl_setopt($ch,CURLOPT_TIMEOUT,10);
+           curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+           $resText = curl_exec($ch);
+           if(curl_errno($ch)){
+               $rspMsg['state'] = -2;
+               $rspMsg['msg'] = curl_error($ch);
+               return $rspMsg;
+           }
+           $result = json_decode($resText,true);
+           if(array_key_exists('errcode',$result)){
+            $rspMsg['state'] = $result['errcode'];
+            $rspMsg['msg'] = $result['errmsg'];
+               return $rspMsg;
+           }
+           $rspMsg['msg'] = $result;
+           curl_close($ch);
+           return $rspMsg;
+    }
 ?>
