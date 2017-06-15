@@ -6,7 +6,7 @@ use App\Exceptions\ApiException;
 
 class Wx
 {
-    public function getUersInfo($code)
+    public function getUserInfo($code)
     {
         $res = $this->getWebAccessToken($code);
         $parsms = array(
