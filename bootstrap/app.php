@@ -24,6 +24,7 @@ $app = new Laravel\Lumen\Application(
 );
 
 $app->configure('wx');
+$app->configure('error');
 
 // $app->withFacades();
 
