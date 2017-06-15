@@ -79,7 +79,7 @@ class UserController extends Controller
             'state'=>'1'
         );
         $url = "https://open.weixin.qq.com/connect/oauth2/authorize?";
-        return response()->redirectTo($url.http_build_query($params).'#wechat_redirect');
+        return redirect($url.http_build_query($params).'#wechat_redirect');
     }
     /**
      * @param  Request
