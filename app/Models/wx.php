@@ -6,7 +6,12 @@ use App\Exceptions\ApiException;
 
 class Wx
 {
-    public function getUersInfo($code)
+    /**
+     * [获取用户信息]
+     * @param  [String] $code [用户授权的code]
+     * @return [array]       [一个包含用户信息的数组]
+     */
+    public function getUserInfo($code)
     {
         $res = $this->getWebAccessToken($code);
         $parsms = array(
@@ -16,15 +21,13 @@ class Wx
         );
         $url =  'https://api.weixin.qq.com/sns/userinfo?'.http_build_query($parsms);
         $result = myCurl($url);
-        $rspMsg = handleRspMsg($result);
+        $rspMsg = $this->handleRspMsg($result);
         return $rspMsg;
     }
     /**
      * [获取网页授权的token]
-     * @param  [type] $appid     [description]
-     * @param  [type] $appSecret [description]
-     * @param  [type] $code      [description]
-     * @return [type]            [description]
+     * @param  [String] $code      [用户授权的code]
+     * @return [type]            [返回网页授权的access_token和openid]
      */
     private function getWebAccessToken($code) {
         $baseUrl = 'https://api.weixin.qq.com/sns/oauth2/access_token?';
@@ -46,9 +49,7 @@ class Wx
     }
     /**
      * [获取基础的token]
-     * @param  [type] $appid     [description]
-     * @param  [type] $appSecret [description]
-     * @return [type]            [description]
+     * @return [String] [返回基础的access_token]
      */
     public function getBasicAccessToken() {
         $appid = config('wx.appid');
@@ -60,13 +61,13 @@ class Wx
         ];
         $url = 'https://api.weixin.qq.com/cgi-bin/token?'.http_build_query($queryParams);
         $result = myCurl($url);
-        $rspMsg = handleRspMsg($result);
+        $rspMsg = $this->handleRspMsg($result);
         return $rspMsg['access_token'];
     }
     /**
      * [处理返回信息]
-     * @param  [type] $rspMsg [description]
-     * @return [type]         [description]
+     * @param  [String|Array] $rspMsg [curl请求的信息]
+     * @return [String|Array]         [返回处理后的信息]
      */
     private function handleRspMsg($rspMsg) {
         if (is_array($rspMsg)) {
