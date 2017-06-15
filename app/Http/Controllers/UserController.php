@@ -70,7 +70,7 @@ class UserController extends Controller
      */
     public function login3()
     {
-        $callbackUrl = url('login3Callback');
+        $callbackUrl = url('v1/login3_callback');
         $params = array(
             'appid'=>'wx105138e40ec74f25',
             'redirect_uri'=>$callbackUrl,
@@ -88,8 +88,8 @@ class UserController extends Controller
     public  function login3Callback(Request $request)
     {
         $code = $request->input('code');
-        $Wx = new Wx();
-        $userMsg = $Wx->getUserInfo($code);
+        $wx = new Wx();
+        $userMsg = $wx->getUserInfo($code);
         var_dump($userMsg);
     }
 }

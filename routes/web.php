@@ -11,5 +11,5 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
     });
     $app->post('check',['uses'=>'UserController@check']);
     $app->get('login3','UserController@login3');
-    $app->get('login3Callback',['uses'=>'UserController@login3Callback']);
+    $app->get('login3_callback',['uses'=>'UserController@login3Callback']);
 });
