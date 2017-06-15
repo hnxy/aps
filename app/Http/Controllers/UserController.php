@@ -89,7 +89,7 @@ class UserController extends Controller
     {
         $code = $request->input('code');
         $Wx = new Wx();
-        $userMsg = getUserInfo($code);
+        $userMsg = $Wx->getUserInfo($code);
         var_dump($userMsg);
     }
 }
