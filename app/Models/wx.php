@@ -16,7 +16,7 @@ class Wx
         );
         $url =  'https://api.weixin.qq.com/sns/userinfo?'.http_build_query($parsms);
         $result = myCurl($url);
-        $rspMsg = handleRspMsg($result);
+        $rspMsg = $this->handleRspMsg($result);
         return $rspMsg;
     }
     /**
@@ -60,7 +60,7 @@ class Wx
         ];
         $url = 'https://api.weixin.qq.com/cgi-bin/token?'.http_build_query($queryParams);
         $result = myCurl($url);
-        $rspMsg = handleRspMsg($result);
+        $rspMsg = $this->handleRspMsg($result);
         return $rspMsg['access_token'];
     }
     /**
