@@ -52,4 +52,29 @@
         $token = $request->input('token');
         return  $authorization ? $authorization : $token;
     }
+    /**
+     * [myCurl description]
+     * @param  [type] $url    [description]
+     * @param  string $method [description]
+     * @return [type]         [description]
+     */
+    function myCurl($url, $method = 'GET') {
+        $ch = curl_init();
+        if (strtolower($method) == 'POST') {
+            curl_setopt($ch, CURLOPT_POST, true);
+        }
+        curl_setopt($ch,CURLOPT_URL,$url);
+        curl_setopt($ch,CURLOPT_HEADER,0);
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+        curl_setopt($ch,CURLOPT_TIMEOUT,10);
+        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+        $resText = curl_exec($ch);
+        if (curl_errno($ch)) {
+            curl_close($ch);
+            return curl_error($ch);
+        } else {
+            curl_close($ch);
+            return json_decode($resText,true);
+        }
+    }
 ?>

@@ -9,5 +9,7 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
     $app->group(['prefix' => '/user/{user_id}', 'where' => ['user_id' => '[0-9]+'], "middleware" => ["my_auth"]], function() use ($app) {
         $app->get('/', 'UserController@get');
     });
-
+    $app->post('check',['uses'=>'UserController@check']);
+    $app->get('login3','UserController@login3');
+    $app->get('login3Callback',['uses'=>'UserController@login3Callback']);
 });
