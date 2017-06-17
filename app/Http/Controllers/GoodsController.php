@@ -27,7 +27,37 @@ class GoodsController extends Controller
         $page = $page ? $page : 1;
         $goods = new Goods();
         $goodsClasses= new GoodsClasses();
-        return appendArrs($goods->mget($limit,$page), $goodsClasses->mget(), 'category', 'id', 'classes_id');
+        $goodses = $this->formatGoodses($goods->mget($limit,$page));
+        $goodsClassesSet = $goodsClasses->mget();
+        return appendArrs($goodses, $goodsClassesSet, 'category', 'id', 'classes_id');
+    }
+    private function formatGoodses($goodses)
+    {
+        foreach ($goodses as &$goods) {
+            if( time() < $goods->start_time) {
+                $goods->status_text = '即将开售';
+                $goods->buy = [
+                    'text' => '立即购买',
+                    'can_click' => 0,
+                    ];
+                $goods->car = [
+                    'text' => '加入购物车',
+                    'can_click' => 0,
+                    ];
+            } else {
+                $goods->status_text = null;
+                $goods->buy = [
+                    'text' => '立即购买',
+                    'can_click' => 1,
+                    ];
+                $goods->car = [
+                    'text' => '加入购物车',
+                    'can_click' => 1,
+                    ];
+            }
+        }
+        unset($goods);
+        return $goodses;
     }
     /**
      * [获取某个商品的详情]
@@ -36,13 +66,43 @@ class GoodsController extends Controller
      */
     public function show(Request $request)
     {
-        $goodsDetail = [];
         $id = (int) $request->route()[2]['id'];
         $goods = new Goods();
         $goodsImgs = new GoodsImg();
-        $goodsDetail['detail'] = $goods->getDetail($id);
+        $goodsClasses = new GoodsClasses();
+        $goodsInfo = $goods->getDetail($id);
+        if(empty($goodsInfo)) {
+            throw new ApiException('该商品已过期,请选择其他商品',config('error.goods_expire_err.code'));
+        }
+        if( time() < $goodsInfo->start_time) {
+            $goodsDetail = [
+                'status_text' => '即将开售',
+                'buy' => [
+                    'text' => '立即购买',
+                    'can_click' => 0,
+                    ],
+                'car' => [
+                    'text' => '加入购物车',
+                    'can_click' => 0,
+                    ],
+            ];
+        } else {
+            $goodsDetail = [
+                'status_text' => null,
+                'buy' => [
+                    'text' => '立即购买',
+                    'can_click' => 0,
+                    ],
+                'car' => [
+                    'text' => '加入购物车',
+                    'can_click' => 0,
+                    ],
+            ];
+        }
+        $goodsDetail['detail'] = $goodsInfo->detail;
         $goodsDetail['goods_imgs'] = $goodsImgs->mget($id);
-        return response()->json($goodsDetail);
+        $goodsDetail['category'] = $goodsClasses->get($goodsInfo->id);
+        return $goodsDetail;
     }
 }
 ?>

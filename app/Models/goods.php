@@ -30,10 +30,15 @@ class Goods
      */
     public function getDetail($id)
     {
+        $nowtime = time();
         $goods_datail = [];
         $goods = app('db')->table(self::$model)
-        ->where(['id' => $id])
-        ->select(['detail'])
+        ->where([
+            ['id', '=', $id],
+            ['start_time', '<=', $nowtime],
+            ['end_time', '>=', $nowtime],
+            ])
+        ->select(['id', 'start_time', 'detail', 'classes_id'])
         ->first();
         return $goods;
     }
