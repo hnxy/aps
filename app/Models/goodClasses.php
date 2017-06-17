@@ -9,8 +9,15 @@ class GoodsClasses
     {
         return app('db')->table(self::$model)
                         ->where(['state' => 1])
-                        ->select(['name','id'])
+                        ->select(['name', 'id'])
                         ->get();
+    }
+    public function get($id)
+    {
+        return app('db')->table(self::$model)
+                        ->where(['id' => $id])
+                        ->select(['name', 'id'])
+                        ->first();
     }
 }
 ?>

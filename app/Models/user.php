@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Models;
+namespace App\Models;
 
 use DB;
 use App\Exceptions\ApiException;
@@ -53,6 +53,23 @@ class User
         );
         return ['id' => $user->id, 'token' => $token]   ;
     }
+    public static function loginBy3($userInfo3)
+    {
+        $user = static::getByOpenid($userInfo3['openid']);
+        if (empty($user)) {
+            if(static::add($userInfo3)) {
+                return self::getByOpenid($userInfo3['openid']);
+            } else {
+                throw new ApiException('用户信息插入失败', config('err.insert_user_arr_err.code') );
+            }
+        } else {
+            if(static::updateByOpenid($user, $userInfo3['User-Agent'])) {
+                return self::getByOpenid($userInfo3['openid']);
+            } else {
+                throw new ApiException('用户信息更新失败', config('err.insert_user_arr_err.code') );
+            }
+        }
+    }
     /**
      * [通过userid来更新用户的登录情况]
      * @param  [String] $userId [用户ID]
@@ -68,13 +85,9 @@ class User
      * @param  [Array] $userArr [包含用户信息的数组]
      * @return [Bool]          [更新是否成功]
      */
-    public static function updateByOpenid(Request $request, $userArr)
+    public static function updateByOpenid($user, $UserAgent)
     {
         $lastIp = getIp();
-        $userAgent = $request->header('User-Agent');
-        $user = app('db')->table(self::$model)->where([
-                'openid' => $userArr['openid']
-        ])->first();
         $token = genToken();
         $lastLoginTime = time();
         $arr = [
@@ -82,9 +95,33 @@ class User
             'login_count' => $user->login_count + 1,
             'token' => $token,
             'token_expired' => $lastLoginTime + 3600 * 24,
-            'user_agent' => $userAgent,
+            'user_agent' => $UserAgent,
             'last_ip' => $lastIp,
         ];
-        return app('db')->table(self::$model)->where(['openid' => $userArr['openid']])->update($arr);
+        return app('db')->table(self::$model)->where(['openid' => $user->openid])->update($arr);
+    }
+    private static function add($userArr)
+    {
+        $lastIp = getIp();
+        $token = genToken();
+        $lastLoginTime = time();
+        return app('db')->table(self::$model)
+                        ->insert([
+                            'last_login_time' => $lastLoginTime,
+                            'login_count' => 1,
+                            'token' => $token,
+                            'token_expired' => $lastLoginTime + 3600 * 24,
+                            'user_agent' => $userArr['User-Agent'],
+                            'last_ip' => $lastIp,
+                            'openid' => $userArr['openid']
+                        ]);
+    }
+    private static function getByOpenid($openid)
+    {
+        return  $user = app('db')->table(self::$model)
+                                 ->where([
+                                    'openid' => $openid
+                                ])
+                                ->first();
     }
 }
