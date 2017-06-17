@@ -15,7 +15,7 @@ class Goods
     {
         $goods = app('db')->table(self::$model)
         ->select(
-            ['title','description','origin_price','price','start_time','end_time','goods_img','classes_id']
+            ['id','title','description','origin_price','price','start_time','end_time','goods_img','classes_id']
         )
         ->offset($page - 1)
         ->limit($limit)
