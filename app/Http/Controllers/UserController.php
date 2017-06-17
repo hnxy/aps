@@ -42,7 +42,7 @@ class UserController extends Controller
      */
     public static function get(Request $request)
     {
-        return (array) $request->user;
+        return $request->user;
     }
     /**
      * [token验证]
@@ -69,9 +69,9 @@ class UserController extends Controller
     /**
     * [引导用户进入授权页面]
     */
-    public function login3()
+    public function login3(Request $request)
     {
-        $callbackUrl = url('v1/login3_callback');
+        $callbackUrl = url('v1/login3_callback?my_callback='.$request->input('my_callback',config('wx.index')));
         $params = array(
             'appid'=>'wx105138e40ec74f25',
             'redirect_uri'=>$callbackUrl,
@@ -80,7 +80,7 @@ class UserController extends Controller
             'state'=>'1'
         );
         $url = "https://open.weixin.qq.com/connect/oauth2/authorize?";
-        redirect($url.http_build_query($params).'#wechat_redirect');
+        return redirect($url.http_build_query($params).'#wechat_redirect');
     }
     /**
      * [用户同意授权后的回调函数]
@@ -89,10 +89,17 @@ class UserController extends Controller
     public  function login3Callback(Request $request)
     {
         $code = $request->input('code');
+        $callback = $request->input('my_callback');
         $wx = new Wx();
         $user = new User();
         $userMsg = $wx->getUserInfo($code);
-        $user::updateByOpenid($userMsg);
+        $userMsg['User-Agent'] = $request->header('User-Agent');
+        $userInfo = $user->loginBy3($userMsg);
+        $params = [
+            'token' => $userInfo->token,
+            'uid' => $userInfo->id
+        ];
+        return redirect($callback.'?'.http_build_query($params));
     }
 }
 ?>
