@@ -53,10 +53,10 @@
         return  $authorization ? $authorization : $token;
     }
     /**
-     * [myCurl description]
-     * @param  [type] $url    [description]
-     * @param  string $method [description]
-     * @return [type]         [description]
+     * [自定义的curl操作]
+     * @param  [String] $url    [请求的URL地址]
+     * @param  string $method [请求方式]
+     * @return [String|Array]         [执行结果]
      */
     function myCurl($url, $method = 'GET') {
         $ch = curl_init();
@@ -76,5 +76,39 @@
             curl_close($ch);
             return json_decode($resText,true);
         }
+    }
+
+    function obj2arr($obj) {
+        return json_decode(json_encode($obj),TRUE);
+    }
+    /**
+     * [添加映射]
+     * @param  [Object] $arrs [需要映射的对象]
+     * @param  string $key  [映射的字段]
+     * @return [Array]       [映射后的数组]
+     */
+    function getMap($arrs, $key = 'id') {
+        $map = [];
+        foreach ($arrs as $arr) {
+            $map[$arr->$key] = $arr;
+        }
+        return $map;
+    }
+    /**
+     * [将一个对象的值映射到另一个对象]
+     * @param  [Object] $arrs       [映射的对象]
+     * @param  [Object] $appendArrs [被映射的对象]
+     * @param  string $name       [映射后的字段名]
+     * @param  string $appendKey  [被映射对象的字段名]
+     * @param  string $key        [映射对象的字段名]
+     * @return [Object]             [商品对象]
+     */
+    function appendArrs($arrs, $appendArrs, $name = 'append', $appendKey = 'id', $key = 'id') {
+        $map = getMap($appendArrs, $appendKey);
+        foreach ($arrs as &$arr) {
+            $arr->$name = empty($map[$arr->$key]) ? [] : $map[$arr->$key];
+        }
+        unset($arr);
+        return $arrs;
     }
 ?>
