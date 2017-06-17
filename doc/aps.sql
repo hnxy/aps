@@ -14,3 +14,6 @@ CREATE TABLE `aps`.`goods_img` ( `id` INT NOT NULL AUTO_INCREMENT , `goods_id` I
 ALTER TABLE `goods_classes` ADD `state` TINYINT NOT NULL DEFAULT '1' COMMENT '1正常0过期' AFTER `name`;
 -- 修改商品表classes字段的名为classes_id
 ALTER TABLE `goods` CHANGE `classes` `classes_id` TINYINT(4) NOT NULL COMMENT '商品分类';
+--允许账号密码为空
+ALTER TABLE `user` CHANGE `username` `username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_bin NULL COMMENT '账号';
+ALTER TABLE `user` CHANGE `passwd` `passwd` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NULL COMMENT '密码';
