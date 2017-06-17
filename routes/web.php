@@ -1,7 +1,7 @@
 <?php
 
 $app->get('/ping','PingController@ping');
-$app->post('check', 'UserController@check');
+$app->get('check', 'UserController@check');
 $app->group(['prefix' => '/v1'], function() use ($app) {
     $app->post('/login', 'UserController@login');
     $app->group(['prefix' => '/user'], function() use ($app) {
