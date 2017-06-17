@@ -10,7 +10,11 @@ class User
 
     public static $model = "user";
 
-
+    /**
+     * [通过id获取永固实例]
+     * @param  [int] $id [id]
+     * @return [Object]     [包含用户信息的对象]
+     */
     public static function get($id)
     {
         return app('db')->table(self::$model)->where(['id' => $id])->first();
@@ -49,11 +53,38 @@ class User
         );
         return ['id' => $user->id, 'token' => $token]   ;
     }
-
-
+    /**
+     * [通过userid来更新用户的登录情况]
+     * @param  [String] $userId [用户ID]
+     * @param  [Array] $arr    [包含用户信息的数组]
+     * @return [Bool]         [更新是否成功]
+     */
     private static function updateById($userId, $arr)
     {
         return app('db')->table(self::$model)->where(['id' => $userId])->update($arr);
     }
-
+    /**
+     * [通过openid来更新用户的登录情况]
+     * @param  [Array] $userArr [包含用户信息的数组]
+     * @return [Bool]          [更新是否成功]
+     */
+    public static function updateByOpenid(Request $request, $userArr)
+    {
+        $lastIp = getIp();
+        $userAgent = $request->header('User-Agent');
+        $user = app('db')->table(self::$model)->where([
+                'openid' => $userArr['openid']
+        ])->first();
+        $token = genToken();
+        $lastLoginTime = time();
+        $arr = [
+            'last_login_time' => $lastLoginTime,
+            'login_count' => $user->login_count + 1,
+            'token' => $token,
+            'token_expired' => $lastLoginTime + 3600 * 24,
+            'user_agent' => $userAgent,
+            'last_ip' => $lastIp,
+        ];
+        return app('db')->table(self::$model)->where(['openid' => $userArr['openid']])->update($arr);
+    }
 }

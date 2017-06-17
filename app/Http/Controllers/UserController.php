@@ -11,8 +11,8 @@ class UserController extends Controller
 {
 
     /**
-     * @param  Request
-     * @return [type]
+     * @param  Request [注入Request实例]
+     * @return [Object] [返回用户信息的对象]
      */
     public function login(Request $request)
     {
@@ -37,16 +37,17 @@ class UserController extends Controller
         return $user;
     }
     /**
-     * @param  Request
-     * @return [type]
+     * @param  Request [注入Request实例]
+     * @return [包含用户信息的数组]
      */
     public static function get(Request $request)
     {
         return (array) $request->user;
     }
     /**
-     * @param  Request
-     * @return [type]
+     * [token验证]
+     * @param  Request $request [获取request实例]
+     * @return [String]           [返回空串或者echostr]
      */
     public function check(Request $request)
     {
@@ -66,8 +67,8 @@ class UserController extends Controller
        }
     }
     /**
-     * @return [type]
-     */
+    * [引导用户进入授权页面]
+    */
     public function login3()
     {
         $callbackUrl = url('v1/login3_callback');
@@ -79,18 +80,19 @@ class UserController extends Controller
             'state'=>'1'
         );
         $url = "https://open.weixin.qq.com/connect/oauth2/authorize?";
-        return redirect($url.http_build_query($params).'#wechat_redirect');
+        redirect($url.http_build_query($params).'#wechat_redirect');
     }
     /**
-     * @param  Request
-     * @return [type]
+     * [用户同意授权后的回调函数]
+     * @param  Request $request [注入Request实例]
      */
     public  function login3Callback(Request $request)
     {
         $code = $request->input('code');
         $wx = new Wx();
+        $user = new User();
         $userMsg = $wx->getUserInfo($code);
-        var_dump($userMsg);
+        $user::updateByOpenid($userMsg);
     }
 }
 ?>
