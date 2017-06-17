@@ -51,27 +51,27 @@ class UserController extends Controller
      */
     public function check(Request $request)
     {
-       $timestamp = $request->input('timestamp');
-       $signature = $request->input('signature');
-       $nonce     = $request->input('nonce');
-       $echostr   = $request->input('echostr','');
-       $list      = array();
-       array_push($list,$timestamp,$nonce,self::token);
-       sort($list,SORT_STRING);
-       $lstring = sha1(implode($list));
-       if($signature == $lstring){
+        $timestamp = $request->input('timestamp');
+        $signature = $request->input('signature');
+        $nonce     = $request->input('nonce');
+        $echostr   = $request->input('echostr', '');
+        $list      = array();
+        array_push($list,$timestamp, $nonce, config('wx.token'));
+        sort($list, SORT_STRING);
+        $lstring = sha1(implode($list));
+        if($signature == $lstring){
            return $echostr;
-       }
-       else{
+        }
+        else{
            return '';
-       }
+        }
     }
     /**
     * [引导用户进入授权页面]
     */
     public function login3(Request $request)
     {
-        $callbackUrl = url('v1/login3_callback?my_callback='.$request->input('my_callback',config('wx.index')));
+        $callbackUrl = url('v1/login3_callback?my_callback='.$request->input('my_callback', config('wx.index')));
         $params = array(
             'appid'=>'wx105138e40ec74f25',
             'redirect_uri'=>$callbackUrl,
