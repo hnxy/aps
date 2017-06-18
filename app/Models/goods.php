@@ -1,10 +1,18 @@
 <?php
+
 namespace App\Models;
 
 class Goods
 {
     private static $model = 'goods';
 
+    public function get($id)
+    {
+        return app('db')->table(self::$model)
+                        ->where(['id' => $id])
+                        ->select(['title', 'price'])
+                        ->first();
+    }
     /**
      * [mget description]
      * @param  integer $limit [每次获取的条目]
@@ -15,7 +23,7 @@ class Goods
     {
         $goods = app('db')->table(self::$model)
         ->select(
-            ['id','title','description','origin_price','price','start_time','end_time','goods_img','classes_id']
+            ['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'goods_img', 'classes_id', 'unit']
         )
         ->offset($page - 1)
         ->limit($limit)
@@ -38,7 +46,7 @@ class Goods
             ['start_time', '<=', $nowtime],
             ['end_time', '>=', $nowtime],
             ])
-        ->select(['id', 'start_time', 'detail', 'classes_id'])
+        ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'detail', 'classes_id'])
         ->first();
         return $goods;
     }

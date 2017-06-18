@@ -99,7 +99,7 @@ class GoodsController extends Controller
                     ],
             ];
         }
-        $goodsDetail['detail'] = $goodsInfo->detail;
+        $goodsDetail['detail'] = $goodsInfo;
         $goodsDetail['goods_imgs'] = $goodsImgs->mget($id);
         $goodsDetail['category'] = $goodsClasses->get($goodsInfo->id);
         return $goodsDetail;
