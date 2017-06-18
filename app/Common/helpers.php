@@ -118,6 +118,6 @@
         $diff = $timestamp - time();
         $D =  intval($diff/86400);
         $H = intval($diff%86400/3600);
-        return '离结束时间还剩'.$D.'天'.$H.'小时';
+        return $D.'天'.$H.'小时';
     }
 ?>
