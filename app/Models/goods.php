@@ -46,7 +46,7 @@ class Goods
             ['start_time', '<=', $nowtime],
             ['end_time', '>=', $nowtime],
             ])
-        ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'detail', 'classes_id'])
+        ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'detail', 'classes_id', 'unit'])
         ->first();
         return $goods;
     }
