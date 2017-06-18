@@ -23,7 +23,7 @@ class Goods
     {
         $goods = app('db')->table(self::$model)
         ->select(
-            ['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'goods_img', 'classes_id', 'unit']
+            ['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'goods_img', 'classes_id', 'unit', 'send_time']
         )
         ->offset($page - 1)
         ->limit($limit)
@@ -46,7 +46,7 @@ class Goods
             ['start_time', '<=', $nowtime],
             ['end_time', '>=', $nowtime],
             ])
-        ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'detail', 'classes_id', 'unit'])
+        ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'detail', 'classes_id', 'unit', 'send_time'])
         ->first();
         return $goods;
     }
