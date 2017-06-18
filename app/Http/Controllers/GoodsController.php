@@ -55,6 +55,9 @@ class GoodsController extends Controller
                     'can_click' => 1,
                     ];
             }
+            $goods->start_time_text =formatTime($goods->start_time);
+            $goods->end_time_text =formatTime($goods->end_time);
+            $goods->leave_end_time_text =formatD($goods->end_time);
         }
         unset($goods);
         return $goodses;
@@ -99,8 +102,11 @@ class GoodsController extends Controller
                     ],
             ];
         }
-        $goodsDetail['detail'] = $goodsInfo->detail;
-        $goodsDetail['goods_imgs'] = $goodsImgs->mget($id);
+        $goodsDetail['detail'] = $goodsInfo;
+        $goodsDetail['start_time_text'] = formatTime($goodsInfo->start_time);
+        $goodsDetail['end_time_text'] = formatTime($goodsInfo->end_time);
+        $goodsDetail['leave_end_time_text'] = formatD($goodsInfo->end_time);
+        $goodsDetail['goods_imgs'][] = $goodsImgs->mget($id);
         $goodsDetail['category'] = $goodsClasses->get($goodsInfo->id);
         return $goodsDetail;
     }
