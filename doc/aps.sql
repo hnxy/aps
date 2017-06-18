@@ -83,5 +83,6 @@ CREATE TABLE `aps`.`agent` ( `id` INT NOT NULL AUTO_INCREMENT COMMENT '代理人
 --添加订单购物车联系表
 CREATE TABLE `aps`.`oder_goods` ( `id` INT NOT NULL AUTO_INCREMENT COMMENT '订单购物车联系ID' , `order_id` INT NOT NULL COMMENT '订单ID' , `goods_car_id` INT NOT NULL COMMENT '购物车ID' , PRIMARY KEY (`id`)) ENGINE = InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT = '订单购物车联系表';
 
---添加字段单位到商品表
+--添加字段单位和预计发货时间到商品表
 ALTER TABLE `goods` ADD `unit` VARCHAR(16) NOT NULL COMMENT '价格的单位' AFTER `classes_id`;
+ALTER TABLE `goods` ADD `send_time` VARCHAR(256) NOT NULL COMMENT '预计发货时间' AFTER `unit`;

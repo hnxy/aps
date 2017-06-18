@@ -9,7 +9,8 @@ class Province
     public static function get($id)
     {
         return app('db')->table(self::$model)
-                        ->
+                        ->where(['id', '=', $id])
+                        ->first();
     }
 }
 
