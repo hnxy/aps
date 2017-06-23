@@ -17,7 +17,8 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
         $app->get('/{id}', 'GoodsController@show');
     });
     $app->group(['prefix' => '/order'], function() use ($app) {
-        $app->post('/', 'GoodsController@store');
-        $app->get('/{id}', 'GoodsController@show');
+        $app->post('/', 'OrderController@store');
+        $app->post('/show', 'OrderController@showPreOrder');
+        $app->get('/{id}', 'OrderController@show');
     });
 });

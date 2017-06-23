@@ -33,26 +33,25 @@ ALTER TABLE `goods` CHANGE `classes` `classes_id` TINYINT(4) NOT NULL COMMENT '�
 ALTER TABLE `user` CHANGE `username` `username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_bin NULL COMMENT '账号';
 ALTER TABLE `user` CHANGE `passwd` `passwd` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NULL COMMENT '密码';
 --添加订单表
-CREATE TABLE `orders` (
+CREATE TABLE `order` (
  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '订单ID',
  `order_num` varchar(256) COLLATE utf8_unicode_ci NOT NULL COMMENT '订单编号',
  `addr_id` int(11) NOT NULL COMMENT '收货地址ID',
  `send_time` int(11) NOT NULL COMMENT '预计发货时间',
- `time_space` int(11) NOT NULL COMMENT '预计几天到货',
+ `time_space` int(11) DEFAULT NULL COMMENT '预计几天到货',
  `send_price` int(11) NOT NULL COMMENT '配送费用',
  `coupon_id` int(11) DEFAULT NULL COMMENT '优惠券ID',
- `agent_id` int(11) NOT NULL COMMENT '代理ID',
  `pay_status` int(11) NOT NULL COMMENT '支付状态；已支付和未支付',
  `pay_by` int(11) NOT NULL COMMENT '支付方式',
- `pay_time` int(11) NOT NULL COMMENT '支付时间',
+ `pay_time` int(11) DEFAULT NULL COMMENT '支付时间',
  `order_status` int(11) NOT NULL COMMENT '订单状态。包含待付款，未发货，待收获，已取消，已删除',
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='订单表';
 --添加购物车表
 CREATE TABLE `goods_car` (
  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '购物车ID',
- `Goods_id` int(11) NOT NULL COMMENT '商品ID',
- `Goods_num` int(11) NOT NULL COMMENT '商品数量',
+ `goods_id` int(11) NOT NULL COMMENT '商品ID',
+ `goods_num` int(11) NOT NULL COMMENT '商品数量',
  `state` int(2) NOT NULL DEFAULT '0' COMMENT '购物车状态',
  PRIMARY KEY (`id`),
  KEY `state` (`state`)
@@ -62,7 +61,7 @@ CREATE TABLE `address` (
  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '收货地址id',
  `name` varchar(32) COLLATE utf8_unicode_ci NOT NULL COMMENT '收货人姓名',
  `sex` int(1) NOT NULL DEFAULT '0' COMMENT '收货人性别',
- `tel` int(15) NOT NULL COMMENT '收货人的电话',
+ `tel` varchar(15) NOT NULL COMMENT '收货人的电话',
  `location` varchar(256) COLLATE utf8_unicode_ci NOT NULL COMMENT '收货人的详细地址',
  `openid` varchar(256) COLLATE utf8_unicode_ci NOT NULL COMMENT '用户的openid',
  `province_id` int(11) NOT NULL COMMENT '省ID',
@@ -81,8 +80,20 @@ CREATE TABLE `aps`.`area` ( `id` INT NOT NULL AUTO_INCREMENT COMMENT '县或区I
 --添加代理用户表
 CREATE TABLE `aps`.`agent` ( `id` INT NOT NULL AUTO_INCREMENT COMMENT '代理人ID' , `username` VARCHAR(32) NOT NULL COMMENT '用户名' , `password` VARCHAR(256) NOT NULL COMMENT '密码' , `login_count` INT NOT NULL DEFAULT '0' COMMENT '登录次数' , `last_ip` VARCHAR(32) NOT NULL COMMENT '登录的IP' , `last_login_time` INT NOT NULL COMMENT '最后一次登录时间' , `token` VARCHAR(256) NOT NULL COMMENT 'token' , `token_expired` INT NOT NULL COMMENT 'token过期时间' , PRIMARY KEY (`id`)) ENGINE = InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT = '代理的用户表';
 --添加订单购物车联系表
-CREATE TABLE `aps`.`oder_goods` ( `id` INT NOT NULL AUTO_INCREMENT COMMENT '订单购物车联系ID' , `order_id` INT NOT NULL COMMENT '订单ID' , `goods_car_id` INT NOT NULL COMMENT '购物车ID' , PRIMARY KEY (`id`)) ENGINE = InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT = '订单购物车联系表';
-
+CREATE TABLE `aps`.`order_goods` ( `id` INT NOT NULL AUTO_INCREMENT COMMENT '订单购物车联系ID' , `order_id` INT NOT NULL COMMENT '订单ID' , `goods_car_id` INT NOT NULL COMMENT '购物车ID' , PRIMARY KEY (`id`)) ENGINE = InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT = '订单购物车联系表';
+--添加优惠券表
+CREATE TABLE `coupon` (
+ `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '优惠券的ID',
+ `coupon_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '优惠券的兑换码',
+ `price` decimal(10,2) NOT NULL COMMENT '优惠券的价值',
+ `state` int(2) NOT NULL DEFAULT '0' COMMENT '优惠券的状态',
+ `agent_id` int(32) NOT NULL COMMENT '优惠券的所属者',
+ `goods_id` int(11) NOT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `coupon_code` (`coupon_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='优惠券表';
 --添加字段单位和预计发货时间到商品表
 ALTER TABLE `goods` ADD `unit` VARCHAR(16) NOT NULL COMMENT '价格的单位' AFTER `classes_id`;
 ALTER TABLE `goods` ADD `send_time` VARCHAR(256) NOT NULL COMMENT '预计发货时间' AFTER `unit`;
+--更改商品表的send_time字段为int类型
+ALTER TABLE `goods` CHANGE `send_time` `send_time` INT NOT NULL COMMENT '预计发货时间';

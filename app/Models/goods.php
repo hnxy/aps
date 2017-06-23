@@ -10,7 +10,7 @@ class Goods
     {
         return app('db')->table(self::$model)
                         ->where(['id' => $id])
-                        ->select(['title', 'price'])
+                        ->select(['title', 'price', 'unit', 'send_time'])
                         ->first();
     }
     /**
@@ -21,12 +21,15 @@ class Goods
      */
     public function mget($limit, $page)
     {
+        $nowTime = time();
         $goods = app('db')->table(self::$model)
         ->select(
             ['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'goods_img', 'classes_id', 'unit', 'send_time']
         )
+        ->where([['end_time', '>=', $nowTime]])
         ->offset($page - 1)
         ->limit($limit)
+        ->orderBy('id','desc')
         ->get();
         return $goods;
     }
@@ -43,8 +46,8 @@ class Goods
         $goods = app('db')->table(self::$model)
         ->where([
             ['id', '=', $id],
-            ['start_time', '<=', $nowtime],
-            ['end_time', '>=', $nowtime],
+            // ['start_time', '<=', $nowtime],
+            // ['end_time', '>=', $nowtime],
             ])
         ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'detail', 'classes_id', 'unit', 'send_time'])
         ->first();
