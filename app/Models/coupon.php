@@ -33,6 +33,14 @@ class Coupon
                         ])
                         ->first();
     }
+    public function checkWork($value, $key) {
+        if($key == 'id') {
+            $result = $this->validateId($value);
+        } else{
+            $result = $this->validateCode($value);
+        }
+        return $result;
+    }
 }
 
 ?>

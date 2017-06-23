@@ -10,7 +10,7 @@ class Goods
     {
         return app('db')->table(self::$model)
                         ->where(['id' => $id])
-                        ->select(['title', 'price', 'unit', 'send_time'])
+                        ->select(['title', 'description', 'origin_price', 'price', 'unit', 'send_time'])
                         ->first();
     }
     /**

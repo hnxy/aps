@@ -17,14 +17,12 @@ class GoodsController extends Controller
     public function index(Request $request)
     {
         $rules = [
-            'limit' => 'integer|max:100',
-            'page' => 'integer',
+            'limit' => 'integer|min:1|max:100',
+            'page' => 'integer|min:1',
         ];
         $this->validate($request, $rules);
-        $limit = $request->input('limit');
-        $page  = $request->input('page');
-        $limit = $limit ? $limit : 10;
-        $page = $page ? $page : 1;
+        $limit = $request->input('limit', 10);
+        $page  = $request->input('page', 1);
         $goods = new Goods();
         $goodsClasses= new GoodsClasses();
         $goodses = $this->formatGoodses($goods->mget($limit,$page));

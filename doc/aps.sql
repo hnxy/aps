@@ -33,7 +33,7 @@ ALTER TABLE `goods` CHANGE `classes` `classes_id` TINYINT(4) NOT NULL COMMENT '�
 ALTER TABLE `user` CHANGE `username` `username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_bin NULL COMMENT '账号';
 ALTER TABLE `user` CHANGE `passwd` `passwd` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NULL COMMENT '密码';
 --添加订单表
-CREATE TABLE `order` (
+CREATE TABLE `orders` (
  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '订单ID',
  `order_num` varchar(256) COLLATE utf8_unicode_ci NOT NULL COMMENT '订单编号',
  `addr_id` int(11) NOT NULL COMMENT '收货地址ID',
@@ -97,3 +97,10 @@ ALTER TABLE `goods` ADD `unit` VARCHAR(16) NOT NULL COMMENT '价格的单位' AF
 ALTER TABLE `goods` ADD `send_time` VARCHAR(256) NOT NULL COMMENT '预计发货时间' AFTER `unit`;
 --更改商品表的send_time字段为int类型
 ALTER TABLE `goods` CHANGE `send_time` `send_time` INT NOT NULL COMMENT '预计发货时间';
+--添加创建时间到购物车和订单表
+ALTER TABLE `goods_car` ADD `created_at` INT NOT NULL COMMENT '创建的时间' AFTER `state`, ADD INDEX (`created_at`);
+ALTER TABLE `orders` ADD `created_at` INT NOT NULL COMMENT '创建的时间' AFTER `order_status`, ADD INDEX `订单创建的时间` (`created_at`);
+-- 更改coupon_code的字段名为code
+ALTER TABLE `coupon` CHANGE `coupon_code` `code` VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '优惠券的兑换码';
+--添加创建时间到地址
+ALTER TABLE `address` ADD `created_at` INT NOT NULL COMMENT '创建的时间' AFTER `state`, ADD INDEX (`created_at`);
