@@ -111,15 +111,6 @@ class Address
                         ->where('id', $id)
                         ->update($addrArr);
     }
-    public static function checkAddrWork($provinceId, $cityId, $areaId)
-    {
-        if(intval($provinceId/10000) == intval($cityId/10000) && intval($cityId/1000) == intval($areaId/1000) ) {
-            if(Province::get($provinceId) && City::get($cityId) && Area::get($areaId))
-                return true;
-            return false;
-        }
-        return false;
-    }
     public static function setDefault($id)
     {
         app('db')->table(self::$model)

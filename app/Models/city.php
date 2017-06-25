@@ -10,9 +10,17 @@ class City
     {
         return app('db')->table(self::$model)
                         ->where([
-                            ['id', '=', $id],
+                            ['city_id', '=', $id],
                         ])
                         ->first();
+    }
+    public static function mget($provinceId)
+    {
+        return app('db')->table(self::$model)
+                        ->where([
+                            ['province_id', '=', $provinceId],
+                        ])
+                        ->get();
     }
 }
 

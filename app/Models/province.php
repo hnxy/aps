@@ -10,9 +10,14 @@ class Province
     {
         return app('db')->table(self::$model)
                         ->where([
-                            ['id', '=', $id],
+                            ['province_id', '=', $id],
                         ])
                         ->first();
+    }
+    public static function mget()
+    {
+        return app('db')->table(self::$model)
+                        ->get();
     }
 }
 

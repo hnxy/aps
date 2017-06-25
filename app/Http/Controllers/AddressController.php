@@ -112,7 +112,7 @@ class AddressController extends Controller
         $areaId = $request->input('area');
         $detail = $request->input('detail');
         $rsp = config('wx.msg');
-        if(!Address::checkAddrWork($provinceId, $cityId, $areaId)) {
+        if(!Area::checkAddrWork($provinceId, $cityId, $areaId)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '该地址不合法';
         }
@@ -148,6 +148,42 @@ class AddressController extends Controller
         $goodsCarId = $request->route()[2]['id'];
         GoodsCar::setDefault($goodsCarId);
         return config('wx.msg');
+    }
+    public function getProvince()
+    {
+        $rsp = config('wx.addr');
+        $rsp['state'] = 0;
+        $rsp['items'] = Province::mget();
+        $rsp['num'] = count($rsp['items']);
+        return $rsp;
+    }
+    public function getCity(Request $request)
+    {
+        $rules = [
+            'province' => 'required|integer|max:820000|min:110000',
+        ];
+        $this->validate($request, $rules);
+        $provinceId = $request->input('province');
+        $rsp = config('wx.addr');
+        $rsp['state'] = 0;
+        $rsp['items'] = City::mget($provinceId);
+        $rsp['num'] = count($rsp['items']);
+        return $rsp;
+    }
+    public function getArea(Request $request)
+    {
+        $rules = [
+            'province' => 'required|integer|max:820000|min:110000',
+            'city' => 'required|integer|max:820100|min:110100',
+        ];
+        $this->validate($request, $rules);
+        $provinceId = $request->input('province');
+        $cityId = $request->input('city');
+        $rsp = config('wx.addr');
+        $rsp['state'] = 0;
+        $rsp['items'] = Area::mget($provinceId, $cityId);
+        $rsp['num'] = count($rsp['items']);
+        return $rsp;
     }
 }
 ?>

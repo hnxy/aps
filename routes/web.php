@@ -38,6 +38,9 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
     $app->group(['prefix' => '/address'], function() use ($app) {
         $app->post('/', 'AddressController@store');
         $app->get('/', 'AddressController@index');
+        $app->get('/province', 'AddressController@getProvince');
+        $app->get('/city', 'AddressController@getCity');
+        $app->get('/area', 'AddressController@getArea');
         $app->group(['prefix' => 'set/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
              $app->put('/', 'AddressController@setDefault');
         });
