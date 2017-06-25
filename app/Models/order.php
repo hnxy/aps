@@ -42,7 +42,9 @@ class Order
     public function getPrice($goodsCars, $value, $key = 'id') {
         $goodsInfos = [];
         $all_price = 0;
+        $goods_ids = [];
         foreach ($goodsCars as $goodsCar) {
+            $goods_ids[] = $goodsCar->goods_id;
             $goodsInfo = Goods::get($goodsCar->goods_id);
             if(empty($goodsInfo)) {
                 throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
@@ -57,7 +59,7 @@ class Order
         }
         if(!is_null($value)) {
             $result = Coupon::checkWork($value, $key);
-            if(!empty($result)) {
+            if(!empty($result) && in_array($result->goods_id, $goods_ids)) {
                 $couponValue = $result->price;
                 $couponCode = $result->code;
             } else {
@@ -111,10 +113,18 @@ class Order
      * @param  integer $state [状态码]
      * @return [Object]         [包含该类型的对象]
      */
-    public static function mget($state = 0)
+    public static function mget($limit, $page, $state)
     {
+        if($state === '-1') {
         return app('db')->table(self::$model)
-                        ->where('state', $state)
+                        ->limit($limit)
+                        ->offset($page-1)
+                        ->get();
+        }
+        return app('db')->table(self::$model)
+                        ->limit($limit)
+                        ->offset($page-1)
+                        ->where('order_status', $state)
                         ->get();
     }
 }

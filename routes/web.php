@@ -19,6 +19,9 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
     $app->group(['prefix' => '/order'], function() use ($app) {
         $app->post('/', 'OrderController@store');
         $app->post('/show', 'OrderController@showPreOrder');
+        $app->group(['prefix' => '/classes/{state}', 'where' => ['state' => '\d'] ], function() use($app){
+            $app->get('/', 'OrderController@getClassesOrder');
+        });
         $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use($app){
             $app->get('/', 'OrderController@show');
             $app->delete('/', 'OrderController@delete');

@@ -30,18 +30,20 @@ class CouponController extends Controller
     public function checkCode(Request $request)
     {
         $rules = [
-            'code' => 'required|string|max:32'
+            'code' => 'required|string|max:32',
+            'goods_ids.*' => 'required|integer',
         ];
         $this->validate($request, $rules);
         $rsp = config('wx.msg');
         $code = $request->input('code');
         $coupon = Coupon::checkWork($code, 'code');
-        if(empty($coupon)) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该优惠码无效';
-        } else {
+        $goods_ids = $request->input('goods_ids');
+        if(!empty($coupon) && in_array($coupon->goods_id, $goods_ids)) {
             $rsp['state'] = 0;
             $rsp['msg'] = $coupon;
+        } else {
+            $rsp['state'] = 1;
+            $rsp['msg'] = '该优惠码无效';
         }
         return $rsp;
     }

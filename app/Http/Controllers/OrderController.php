@@ -54,6 +54,12 @@ class OrderController extends Controller
         $order = new Order();
         $address = new Address();
         $orderMsg = Order::get($orderID);
+        $rsp = config('wx.msg');
+        if(empty($orderMsg)) {
+            $rsp['state'] = 1;
+            $rsp['msg'] = '该订单不存在';
+            return $rsp;
+        }
         $addrID = $orderMsg->addr_id;
         $couponID = $orderMsg->coupon_id;
         // 根据订单号获取相关联的购物车ID
@@ -158,11 +164,15 @@ class OrderController extends Controller
     public function getClassesOrder(Request $request)
     {
         $rules = [
-            'state' => 'required|integer'
+            'limit' => 'integer|max:100|min:10',
+            'page' => 'integer|min:1'
         ];
         $this->validate($request, $rules);
         $rsp = config('wx.msg');
-        $orders = Order::mget($state);
+        $state = $request->route()[2]['state'];
+        $limit = $request->input('limit', 10);
+        $page = $request->input('page', 1);
+        $orders = Order::mget($limit, $page, $state);
         if(empty($orders)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '您还没有此类型的订单哦';
