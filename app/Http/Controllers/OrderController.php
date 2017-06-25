@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Orders;
+use App\Models\Order;
 use App\Models\GoodsCar;
 use App\Models\OrderGoods;
 use App\Models\Goods;
@@ -15,7 +15,7 @@ use App\Models\Coupon;
 use App\Exceptions\ApiException;
 use Illuminate\Support\Facades\DB;
 
-class OrdersController extends Controller
+class OrderController extends Controller
 {
     /**
      * [展示临时订单]
@@ -31,8 +31,7 @@ class OrdersController extends Controller
         $this->validate($request, $rules);
         $goodsCarIDs = $request->input('goods_car_ids');
         $addrID = $request->input('addr_id', null);
-        // $couponCode = $request->input('coupon_code', null);
-        $order = new Orders();
+        $order = new Order();
         $address = new Address();
         // 获取购物车的信息,该返回的数据为对象数组
         $goodsCars = GoodsCar::mget($goodsCarIDs);
@@ -52,9 +51,9 @@ class OrdersController extends Controller
     public function show(Request $request)
     {
         $orderID = $request->route()[2]['id'];
-        $order = new Orders();
+        $order = new Order();
         $address = new Address();
-        $orderMsg = Orders::get($orderID);
+        $orderMsg = Order::get($orderID);
         $addrID = $orderMsg->addr_id;
         $couponID = $orderMsg->coupon_id;
         // 根据订单号获取相关联的购物车ID
@@ -67,9 +66,9 @@ class OrdersController extends Controller
         }
         return [
             'id' => $orderID,
-            'pay_status' => $orderMsg->pay_status,
-            'pay_by' => $orderMsg->pay_by,
-            'order_status' => $orderMsg->order_status,
+            'pay_status' => config('wx.pay_status')[$orderMsg->pay_status],
+            'pay_by' => config('wx.pay_by')[$orderMsg->pay_by],
+            'order_status' => config('wx.order_status')[$orderMsg->order_status],
             'rcv_info' => $address->getFullAddr($addrID),
             'price_info' => $order->getPrice($goodsCars, $couponID),
         ];
@@ -90,8 +89,8 @@ class OrdersController extends Controller
         $goodsCarIDs = $request->input('goods_car_ids');
         $addrID = $request->input('addr_id', null);
         $couponID = $request->input('coupon_id', null);
-        $res = true;
-        $order = new Orders();
+        $rsp = config('wx.msg');
+        $order = new Order();
         $address = new Address();
         // 获取地址的id
         $addrId = getAddrId($address, $addrID);
@@ -114,7 +113,7 @@ class OrdersController extends Controller
              * 创建订单
              */
             $order_num = getRandomString(16);
-            $orderId = Orders::create([
+            $orderId = Order::create([
                 'order_num' => $order_num,
                 'addr_id' => $addrId,
                 'send_time' => $order->getSendTime($goodsCars),
@@ -129,10 +128,11 @@ class OrdersController extends Controller
             OrderGoods::create($goodsCarIDs, $orderId);
             app('db')->commit();
         } catch(Exceptions $e) {
-            $res = false;
+            $rsp['state'] = 1;
+            $rsp['msg'] = '订单创建失败';
             app('db')->rollBack();
         }
-        return  $res !== false ? 0 : 1;
+        return  $rsp;
     }
     /**
      * [删除订单]
@@ -142,17 +142,18 @@ class OrdersController extends Controller
     public function delete(Request $request)
     {
         $id = $request->route()[2]['id'];
-        $res = true;
+        $rsp = config('wx.msg');
         try {
             app('db')->beginTransaction();
             OrderGoods::remove($id);
-            Orders::remove($id);
+            Order::remove($id);
             app('db')->commit();
         } catch(Exceptions $e) {
-            $res = false;
+            $rsp['state'] = 1;
+            $rsp['msg'] = '删除订单失败';
             app('db')->rollBack();
         }
-        return  $res !== false ? 0 : 1;
+        return  $rsp;
     }
     public function getClassesOrder(Request $request)
     {
@@ -161,8 +162,8 @@ class OrdersController extends Controller
         ];
         $this->validate($request, $rules);
         $rsp = config('wx.msg');
-        $orders = Orders::mget($state);
-        if(empty($order)) {
+        $orders = Order::mget($state);
+        if(empty($orders)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '您还没有此类型的订单哦';
         } else {

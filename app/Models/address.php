@@ -14,7 +14,7 @@ class Address
      * @param  [Integer] $id [地址的ID]
      * @return [Object]     [地址信息对象]
      */
-    public function get($id = null)
+    public static function get($id = null)
     {
         if(is_null($id)) {
             return app('db')->table(self::$model)
@@ -68,8 +68,11 @@ class Address
      */
     public static function add($addrArr)
     {
+        if(empty(static::get())) {
+            $addrArr['state'] = 0;
+        }
         return app('db')->table(self::$model)
-                        ->insertGetId($addrArr);
+                        ->insert($addrArr);
     }
     /**
      * [获取地址信息条目]
@@ -116,6 +119,14 @@ class Address
             return false;
         }
         return false;
+    }
+    public static function setDefault($id)
+    {
+        app('db')->table(self::$model)
+                 ->update(['state' => 1]);
+        return  app('db')->table(self::$model)
+                         ->where('id', $id)
+                         ->update(['state' => 0]);
     }
 }
 

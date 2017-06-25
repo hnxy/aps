@@ -62,12 +62,18 @@ class GoodsCarController extends Controller
             throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
         }
         $goodsNum = $request->input('goods_num');
-        $goossCarId = GoodsCar::add([
+
+        $goodsCar = GoodsCar::hasGoods($goodsId);
+        if(!empty($goodsCar)) {
+            GoodsCar::updateGoodsNum($goodsCar->id, $goodsNum+$goodsCar->goods_num);
+        } else {
+            GoodsCar::add([
                         'goods_id' => $goodsId,
                         'goods_num' => $goodsNum,
                         'created_at' => time(),
-                    ]);
-        return $goossCarId;
+            ]);
+        }
+        return config('wx.msg');
     }
     /**
      * [更新购物车]
@@ -87,20 +93,18 @@ class GoodsCarController extends Controller
         if(empty($goodsCars)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
-        return GoodsCar::updateGoodsNum($id, $goodsNum) !== false ? 0 : 1;
+        GoodsCar::updateGoodsNum($id, $goodsNum);
+        return config('wx.msg');
     }
     /**
      * [删除购物车]
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function delate(Request $request)
+    public function delete(Request $request)
     {
-        $rules = [
-            'goods_car_id' => 'required|integer'
-        ];
-        $this->validate($request, $rules);
-        $goodsCarId = $request->input('goods_car_id');
-        return GoodsCar::remove($goodsCarId) !== false ? 0 : 1;
+        $goodsCarId = $request->route()[2]['id'];
+        GoodsCar::remove($goodsCarId);
+        return config('wx.msg');
     }
 }

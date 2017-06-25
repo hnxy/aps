@@ -89,8 +89,16 @@ class GoodsCar
     public static function remove($goodsCarId)
     {
         return app('db')->table(self::$model)
-                        ->where('goods_car_id', $goodsCarId)
+                        ->where('id', $goodsCarId)
                         ->delete();
     }
+    public static function hasGoods($id)
+    {
+        return app('db')->table(self::$model)
+                        ->where('goods_id', $id)
+                        ->first();
+
+    }
+
 }
 ?>

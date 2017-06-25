@@ -17,7 +17,7 @@ class CouponController extends Controller
         $goodsId = $request->input('goods_id');
         $agentId = $request->input('agent_id');
         $rsp = config('wx.msg');
-        $coupon = Conpon::get($goodsId, $agentId);
+        $coupon = Coupon::get($goodsId, $agentId);
         if(empty($coupon)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '无法兑换该优惠码';

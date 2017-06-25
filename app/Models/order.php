@@ -6,7 +6,7 @@ use App\Models\Goods;
 use App\Models\Coupon;
 use App\Exceptions\ApiException;
 
-class Orders
+class Order
 {
     private static $model = 'orders';
     /**

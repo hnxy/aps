@@ -56,20 +56,24 @@ class AddressController extends Controller
         $cityId = $request->input('city');
         $areaId = $request->input('area');
         $detail = $request->input('detail');
+        $rsp = config('wx.msg');
         if(!Address::checkAddrWork($provinceId, $cityId, $areaId)) {
-            return '该地址不合法';
+            $rsp['state'] = 1;
+            $rsp['msg'] = '该地址不合法';
+        } else {
+            Address::add([
+                'sex'=> $sex,
+                'name' => $name,
+                'tel' => $phone,
+                'province_id' => $provinceId,
+                'city_id' => $cityId,
+                'area_id' => $areaId,
+                'location' => $detail,
+                'state' => 1,
+                'created_at' => time(),
+            ]);
         }
-        return Address::add([
-            'sex'=> $sex,
-            'name' => $name,
-            'tel' => $phone,
-            'province_id' => $provinceId,
-            'city_id' => $cityId,
-            'area_id' => $areaId,
-            'location' => $detail,
-            'state' => 1,
-            'created_at' => time(),
-        ]) !== false ? 0 : 1;;
+        return $rsp;
     }
     /**
      * [查看地址信息]
@@ -107,10 +111,12 @@ class AddressController extends Controller
         $cityId = $request->input('city');
         $areaId = $request->input('area');
         $detail = $request->input('detail');
+        $rsp = config('wx.msg');
         if(!Address::checkAddrWork($provinceId, $cityId, $areaId)) {
-            return '该地址不合法';
+            $rsp['state'] = 1;
+            $rsp['msg'] = '该地址不合法';
         }
-        return Address::modify($id, [
+        Address::modify($id, [
             'sex'=> $sex,
             'name' => $name,
             'tel' => $phone,
@@ -119,7 +125,8 @@ class AddressController extends Controller
             'area_id' => $areaId,
             'location' => $detail,
             'state' => 1,
-        ]) !== false ? 0 : 1;
+        ]);
+        return $rsp;
     }
     /**
      * [删除商品信息]
@@ -129,7 +136,18 @@ class AddressController extends Controller
     public function delete(Request $request)
     {
         $id = $request->route()[2]['id'];
-        return Address::remove($id) !== false ? 0 : 1;
+        Address::remove($id);
+        return config('wx.msg');
+    }
+    /**
+     * [设为默认收货地址]
+     * @param Request $request [description]
+     */
+    public function setDefault(Request $request)
+    {
+        $goodsCarId = $request->route()[2]['id'];
+        GoodsCar::setDefault($goodsCarId);
+        return config('wx.msg');
     }
 }
 ?>

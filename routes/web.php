@@ -17,11 +17,11 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
         $app->get('/{id}', 'GoodsController@show');
     });
     $app->group(['prefix' => '/order'], function() use ($app) {
-        $app->post('/', 'OrdersController@store');
-        $app->post('/show', 'OrdersController@showPreOrder');
+        $app->post('/', 'OrderController@store');
+        $app->post('/show', 'OrderController@showPreOrder');
         $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use($app){
-            $app->get('/', 'OrdersController@show');
-            $app->delete('/', 'OrdersController@delete');
+            $app->get('/', 'OrderController@show');
+            $app->delete('/', 'OrderController@delete');
         });
     });
     $app->group(['prefix' => '/goods_car'], function() use ($app) {
@@ -35,6 +35,9 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
     $app->group(['prefix' => '/address'], function() use ($app) {
         $app->post('/', 'AddressController@store');
         $app->get('/', 'AddressController@index');
+        $app->group(['prefix' => 'set/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
+             $app->put('/', 'AddressController@setDefault');
+        });
         $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
             $app->post('/', 'AddressController@show');
             $app->put('/', 'AddressController@update');
