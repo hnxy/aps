@@ -57,7 +57,7 @@ class AddressController extends Controller
         $areaId = $request->input('area');
         $detail = $request->input('detail');
         $rsp = config('wx.msg');
-        if(!Address::checkAddrWork($provinceId, $cityId, $areaId)) {
+        if(!Area::checkAddrWork($provinceId, $cityId, $areaId)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '该地址不合法';
         } else {
