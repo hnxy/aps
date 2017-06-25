@@ -36,8 +36,8 @@ class Address
      * @return [Array]         [完整地址信息的数组]
      */
     public function getFullAddr($addrID) {
-        $rsp = config('wx.fullAddr');
-        if(!empty($addrID)) {
+        $rsp = config('wx.msg');
+        if(empty($addrID)) {
             $addrDetail = $this->get();
         } else {
             $addrDetail = $this->get($addrID);
@@ -66,7 +66,7 @@ class Address
      * [新增地址信息]
      * @param [Array] $addrArr [地址信息数组]
      */
-    public function add($addrArr)
+    public static function add($addrArr)
     {
         return app('db')->table(self::$model)
                         ->insertGetId($addrArr);
@@ -77,7 +77,7 @@ class Address
      * @param  [Integer] $page  [页数]
      * @return [Object]        [地址信息对象集合]
      */
-    public function mget($limit, $page)
+    public static function mget($limit, $page)
     {
         return app('db')->table(self::$model)
                         ->limit($limit)
@@ -90,7 +90,7 @@ class Address
      * @param  [Integer] $id [地址ID]
      * @return [Integer]     [影响的行数]
      */
-    public function remove($id)
+    public static function remove($id)
     {
         return app('db')->table(self::$model)
                         ->where('id', $id)
@@ -102,11 +102,20 @@ class Address
      * @param  [Array] $addrArr [要更新的地址信息]
      * @return [Integer]          [影响的行数]
      */
-    public function modify($id, $addrArr)
+    public static  function modify($id, $addrArr)
     {
         return app('db')->table(self::$model)
                         ->where('id', $id)
                         ->update($addrArr);
+    }
+    public static function checkAddrWork($provinceId, $cityId, $areaId)
+    {
+        if(intval($provinceId/10000) == intval($cityId/10000) && intval($cityId/1000) == intval($areaId/1000) ) {
+            if(Province::get($provinceId) && City::get($cityId) && Area::get($areaId))
+                return true;
+            return false;
+        }
+        return false;
     }
 }
 

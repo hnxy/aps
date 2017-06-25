@@ -30,7 +30,7 @@ class Coupon
     {
         return app('db')->table(self::$model)
                         ->where([
-                            ['coupon_code', '=', $couponCode],
+                            ['code', '=', $couponCode],
                             ['state', '=', 0],
                         ])
                         ->first();

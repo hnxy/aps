@@ -26,24 +26,22 @@ class OrdersController extends Controller
     {
         $rules = [
             'addr_id' => 'integer',
-            'goods_car_ids' => 'required|integer',
+            'goods_car_ids.*' => 'required|integer',
         ];
         $this->validate($request, $rules);
         $goodsCarIDs = $request->input('goods_car_ids');
-        $addrID = $request->input('addr_id');
-        $goodsCar = new GoodsCar();
-        $goods = new Goods();
+        $addrID = $request->input('addr_id', null);
+        // $couponCode = $request->input('coupon_code', null);
         $order = new Orders();
         $address = new Address();
-        $coupon = new Coupon();
         // 获取购物车的信息,该返回的数据为对象数组
-        $goodsCars = $goodsCar->mget($goodsCarIDs);
+        $goodsCars = GoodsCar::mget($goodsCarIDs);
         if(empty($goodsCars)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
         return [
             'rcv_info' => $address->getFullAddr($addrID),
-            'price_info' => $order->getPrice($goodsCars, null, 'couponCode'),
+            'price_info' => $order->getPrice($goodsCars, null, 'code'),
         ];
     }
     /**
@@ -55,19 +53,15 @@ class OrdersController extends Controller
     {
         $orderID = $request->route()[2]['id'];
         $order = new Orders();
-        $goodsCar = new GoodsCar();
-        $goods = new Goods();
         $address = new Address();
-        $coupon = new Coupon();
-        $orderGoods = new OrderGoods();
-        $orderMsg = $order->get($orderID);
+        $orderMsg = Orders::get($orderID);
         $addrID = $orderMsg->addr_id;
         $couponID = $orderMsg->coupon_id;
         // 根据订单号获取相关联的购物车ID
-        $orderGoodsObj = $orderGoods->getByOrderId($orderID);
+        $orderGoodsObj = OrderGoods::getByOrderId($orderID);
         $goodsCarIDs = getGoodsCarIds($orderGoodsObj);
         // 根据购物车ID获取购物车信息
-        $goodsCars = $goodsCar->mget($goodsCarIDs, 1);
+        $goodsCars = GoodsCar::mget($goodsCarIDs, 1);
         if(empty($goodsCars)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
@@ -96,33 +90,31 @@ class OrdersController extends Controller
         $goodsCarIDs = $request->input('goods_car_ids');
         $addrID = $request->input('addr_id', null);
         $couponID = $request->input('coupon_id', null);
-        $goodsCar = new GoodsCar();
+        $res = true;
         $order = new Orders();
-        $goods = new Goods();
-        $orderGoods = new OrderGoods();
         $address = new Address();
         // 获取地址的id
         $addrId = getAddrId($address, $addrID);
+        // 没有填写收货地址或者收货地址的ID不对
         if(is_null($addrId)) {
             return config('error.addr_null_err');
         }
         try {
             app('db')->beginTransaction();
              // 获取购物车的信息,该返回的数据为对象数组
-            $goodsCars = $goodsCar->mget($goodsCarIDs);
+            $goodsCars = GoodsCar::mget($goodsCarIDs);
             if(empty($goodsCars)) {
                 throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
             }
             // 更新购物车的状态
-            if($goodsCar->updateState($goodsCarIDs, 1)) {
+            if(GoodsCar::updateState($goodsCarIDs, 1)) {
                 throw new ApiException("购物车更新失败", config('error.update_goods_car_err.code'));
             }
-
             /**
              * 创建订单
              */
             $order_num = getRandomString(16);
-            $orderId = $order->create([
+            $orderId = Orders::create([
                 'order_num' => $order_num,
                 'addr_id' => $addrId,
                 'send_time' => $order->getSendTime($goodsCars),
@@ -134,12 +126,13 @@ class OrdersController extends Controller
                 'order_status' => 0,
                 'created_at' => time(),
             ]);
-            $orderGoods->create($goodsCarIDs, $orderId);
+            OrderGoods::create($goodsCarIDs, $orderId);
             app('db')->commit();
         } catch(Exceptions $e) {
+            $res = false;
             app('db')->rollBack();
         }
-
+        return  $res !== false ? 0 : 1;
     }
     /**
      * [删除订单]
@@ -149,8 +142,34 @@ class OrdersController extends Controller
     public function delete(Request $request)
     {
         $id = $request->route()[2]['id'];
-        $order = new Orders();
-        return $order->remove($id) !== false ? 0 : 1;
+        $res = true;
+        try {
+            app('db')->beginTransaction();
+            OrderGoods::remove($id);
+            Orders::remove($id);
+            app('db')->commit();
+        } catch(Exceptions $e) {
+            $res = false;
+            app('db')->rollBack();
+        }
+        return  $res !== false ? 0 : 1;
+    }
+    public function getClassesOrder(Request $request)
+    {
+        $rules = [
+            'state' => 'required|integer'
+        ];
+        $this->validate($request, $rules);
+        $rsp = config('wx.msg');
+        $orders = Orders::mget($state);
+        if(empty($order)) {
+            $rsp['state'] = 1;
+            $rsp['msg'] = '您还没有此类型的订单哦';
+        } else {
+            $rsp['state'] = 0;
+            $rsp['msg'] = $orders;
+        }
+        return $rsp;
     }
 }
 ?>

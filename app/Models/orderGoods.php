@@ -27,12 +27,25 @@ class OrderGoods
      * @param  [Integer] $orderId [订单ID]
      * @return [Array]          [购物车ID集合]
      */
-    public function getByOrderId($orderId)
+    public static function getByOrderId($orderId)
     {
         return app('db')->table(self::$model)
                         ->select('goods_car_id')
                         ->where('order_id', $orderId)
                         ->get();
+    }
+    /**
+     * [根据订单ID删除联系]
+     * @param  [Integer] $orderId [订单ID]
+     * @return [Integer]          [返回影响的行数]
+     */
+    public static function remove($orderId)
+    {
+        return app('db')->table(self::$model)
+                        ->where([
+                            ['order_id', '=', $orderId]
+                        ])
+                        ->delete();
     }
 }
 

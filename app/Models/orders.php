@@ -100,11 +100,22 @@ class Orders
      * @param  [integer] $id [订单ID]
      * @return [integer]     [返回影响的行数]
      */
-    public function remove($id)
+    public static function remove($id)
     {
         return app('db')->table(self::$model)
                         ->where('id', $id)
                         ->delete();
+    }
+    /**
+     * [获取分类订单]
+     * @param  integer $state [状态码]
+     * @return [Object]         [包含该类型的对象]
+     */
+    public static function mget($state = 0)
+    {
+        return app('db')->table(self::$model)
+                        ->where('state', $state)
+                        ->get();
     }
 }
 ?>

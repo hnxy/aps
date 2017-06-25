@@ -23,13 +23,11 @@ class GoodsCarController extends Controller
         $this->validate($request, $rules);
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
-        $goodsCar = new GoodsCar();
-        $goods = new Goods();
-        $goodsCars = $goodsCar->getItems($limit, $page);
+        $goodsCars = GoodsCar::getItems($limit, $page);
         $rsp = [];
         foreach ($goodsCars as $goodsCarItem) {
             //购物车包含过期商品
-            $goodsInfo = $goods->get($goodsCarItem->goods_id);
+            $goodsInfo = Goods::get($goodsCarItem->goods_id);
             if(empty($goodsInfo)) {
                 $temp['state'] = 1;
                 $temp['goods_info'] = '该商品已下架';
@@ -59,14 +57,12 @@ class GoodsCarController extends Controller
         ];
         $this->validate($request, $rules);
         $goodsId = $request->input('goods_id');
-        $goods = new Goods();
         //检查商品是否是未开售或者是已过期的商品
-        if(empty($goods->get($goodsId))) {
+        if(empty(Goods::get($goodsId))) {
             throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
         }
         $goodsNum = $request->input('goods_num');
-        $goodsCar = new GoodsCar();
-        $goossCarId = $goodsCar->add([
+        $goossCarId = GoodsCar::add([
                         'goods_id' => $goodsId,
                         'goods_num' => $goodsNum,
                         'created_at' => time(),
@@ -86,13 +82,12 @@ class GoodsCarController extends Controller
         $this->validate($request, $rules);
         $id = $request->route()[2]['id'];
         $goodsNum = $request->input('goods_num');
-        $goodsCar = new GoodsCar();
         //获取购物车对象集合,判断是否存在异常的购物车
-        $goodsCars = $goodsCar->mget([$id]);
+        $goodsCars = GoodsCar::mget([$id]);
         if(empty($goodsCars)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
-        return $goodsCar->updateGoodsNum($id, $goodsNum) !== false ? 0 : 1;
+        return GoodsCar::updateGoodsNum($id, $goodsNum) !== false ? 0 : 1;
     }
     /**
      * [删除购物车]
@@ -106,7 +101,6 @@ class GoodsCarController extends Controller
         ];
         $this->validate($request, $rules);
         $goodsCarId = $request->input('goods_car_id');
-        $goodsCar = new GoodsCar();
-        return $goodsCar->remove($goodsCarId) !== false ? 0 : 1;
+        return GoodsCar::remove($goodsCarId) !== false ? 0 : 1;
     }
 }

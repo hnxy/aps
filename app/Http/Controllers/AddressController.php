@@ -43,10 +43,10 @@ class AddressController extends Controller
             'sex' => 'integer|max:1',
             'name' => 'required|string',
             'phone' => 'required|string|regex:[\d{11}]',
-            'province' => 'required|integer|max:64|min:0',
-            'city' => 'required|integer|max:64|min:0',
-            'area' => 'required|integer|max:64|min:0',
-            'detail' => 'required|string|max:127',
+            'province' => 'required|integer|max:820000|min:110000',
+            'city' => 'required|integer|max:820100|min:110100',
+            'area' => 'required|integer|max:820105|min:110101',
+            'detail' => 'required|string|max:256',
         ];
         $this->validate($request, $rules);
         $name = $request->input('name');
@@ -56,7 +56,10 @@ class AddressController extends Controller
         $cityId = $request->input('city');
         $areaId = $request->input('area');
         $detail = $request->input('detail');
-        return $address->add([
+        if(!Address::checkAddrWork($provinceId, $cityId, $areaId)) {
+            return '该地址不合法';
+        }
+        return Address::add([
             'sex'=> $sex,
             'name' => $name,
             'tel' => $phone,
@@ -90,9 +93,9 @@ class AddressController extends Controller
             'sex' => 'integer|max:1',
             'name' => 'required|string',
             'phone' => 'required|string|regex:[\d{11}]',
-            'province' => 'required|integer|max:64|min:0',
-            'city' => 'required|integer|max:64|min:0',
-            'area' => 'required|integer|max:64|min:0',
+            'province' => 'required|integer|max:820000|min:110000',
+            'city' => 'required|integer|max:820100|min:110100',
+            'area' => 'required|integer|max:820105|min:110101',
             'detail' => 'required|string|max:127',
         ];
         $this->validate($request, $rules);
@@ -104,8 +107,10 @@ class AddressController extends Controller
         $cityId = $request->input('city');
         $areaId = $request->input('area');
         $detail = $request->input('detail');
-        $address = new Address();
-        return $address->modify($id, [
+        if(!Address::checkAddrWork($provinceId, $cityId, $areaId)) {
+            return '该地址不合法';
+        }
+        return Address::modify($id, [
             'sex'=> $sex,
             'name' => $name,
             'tel' => $phone,
@@ -124,8 +129,7 @@ class AddressController extends Controller
     public function delete(Request $request)
     {
         $id = $request->route()[2]['id'];
-        $address = new Address();
-        return $address->remove($id) !== false ? 0 : 1;
+        return Address::remove($id) !== false ? 0 : 1;
     }
 }
 ?>

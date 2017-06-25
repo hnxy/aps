@@ -41,4 +41,14 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
             $app->delete('/', 'AddressController@delete');
         });
     });
+    $app->group(['prefix' => '/coupon'], function() use ($app) {
+        $app->post('/', 'CouponController@store');
+        $app->get('/', 'CouponController@getCode');
+        $app->post('/check', 'CouponController@checkCode');
+        $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
+            // $app->post('/', 'CouponController@show');
+            $app->put('/', 'CouponController@update');
+            $app->delete('/', 'CouponController@delete');
+        });
+    });
 });

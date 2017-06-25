@@ -86,7 +86,7 @@ class GoodsCar
      * @param  [Integer] $goodsCarId [购物车ID]
      * @return [Integer]             [影响的行数]
      */
-    public function remove($goodsCarId)
+    public static function remove($goodsCarId)
     {
         return app('db')->table(self::$model)
                         ->where('goods_car_id', $goodsCarId)
