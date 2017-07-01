@@ -71,7 +71,7 @@ class GoodsCar
     {
         return app('db')->table(self::$model)
                         ->limit($limit)
-                        ->offset(($page-1)*$limit)
+                        ->offset(($page - 1) * $limit)
                         ->where([
                             ['user_id', '=', $userId],
                             ['state', '=', 0]

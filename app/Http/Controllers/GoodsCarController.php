@@ -29,15 +29,16 @@ class GoodsCarController extends Controller
         $rsp = [];
         foreach ($goodsCars as $goodsCarItem) {
             //购物车包含过期商品
-            $goodsInfo = Goods::get($goodsCarItem->goods_id);
-            if(empty($goodsInfo)) {
+            $goodsInfo = Goods::getDetail($goodsCarItem->goods_id);
+            if($goodsInfo->end_time <= time() ) {
                 $temp['state'] = 1;
-                $temp['goods_info'] = '该商品已下架';
                 $temp['goods_car_id'] = null;
                 $temp['goods_num'] = null;
+                $goodsInfo->status_text = '该商品已下架';
+                $goodsInfo->send_time = formatM($goodsInfo->send_time);
+                $temp['goods_info'] = $goodsInfo;
             } else {
                 $temp['state'] = 0;
-                $goodsInfo->send_time = formatM($goodsInfo->send_time);
                 $temp['goods_car_id'] = $goodsCarItem->id;
                 $temp['goods_num'] = $goodsCarItem->goods_num;
                 $goodsClasses = GoodsClasses::get($goodsInfo->classes_id);
@@ -46,6 +47,7 @@ class GoodsCarController extends Controller
                 } else {
                     $goodsInfo->status_text = $goodsClasses->name;
                 }
+                $goodsInfo->send_time = formatM($goodsInfo->send_time);
                 $temp['goods_info'] = $goodsInfo;
             }
             $rsp[] = $temp;
