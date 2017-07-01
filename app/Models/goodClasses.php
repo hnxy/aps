@@ -6,14 +6,14 @@ class GoodsClasses
 {
     private static $model = 'goods_classes';
 
-    public function mget()
+    public static function mget()
     {
         return app('db')->table(self::$model)
                         ->where(['state' => 1])
                         ->select(['name', 'id'])
                         ->get();
     }
-    public function get($id)
+    public static function get($id)
     {
         return app('db')->table(self::$model)
                         ->where(['id' => $id])

@@ -30,7 +30,8 @@ class Area
                             ['province_id', '=', $provinceId],
                             ['city_id', '=', $cityId],
                             ['area_id', '=', $areaId],
-                        ]);
+                        ])
+                        ->first();
         if(empty($res)) {
             return false;
         }

@@ -17,18 +17,19 @@ class AddressController extends Controller
      */
     public function index(Request $request)
     {
-         $rules = [
+        $rules = [
             'limit' => 'integer|min:1|max:100',
             'page' => 'integer|min:1',
         ];
         $this->validate($request, $rules);
+        $user = $request->user;
         $limit = $request->input('limit', 10);
         $page  = $request->input('page', 1);
         $address = new Address();
-        $addrs = $address->mget($limit, $page);
+        $addrs = $address->mget($user->id, $limit, $page);
         $addrItems = [];
         foreach ($addrs as $addr) {
-            $addrItems[] = $address->getFullAddr($addr->id);
+            $addrItems[] = $address->getFullAddr($user->id, $addr->id);
         }
         return $addrItems;
     }
@@ -40,18 +41,17 @@ class AddressController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'sex' => 'integer|max:1',
             'name' => 'required|string',
             'phone' => 'required|string|regex:[\d{11}]',
             'province' => 'required|integer|max:820000|min:110000',
             'city' => 'required|integer|max:820100|min:110100',
-            'area' => 'required|integer|max:820105|min:110101',
+            'area' => 'required|integer|max:659004003|min:110101',
             'detail' => 'required|string|max:256',
         ];
         $this->validate($request, $rules);
+        $user = $request->user;
         $name = $request->input('name');
         $phone = $request->input('phone');
-        $sex = $request->input('sex', 0);
         $provinceId = $request->input('province');
         $cityId = $request->input('city');
         $areaId = $request->input('area');
@@ -62,7 +62,6 @@ class AddressController extends Controller
             $rsp['msg'] = '该地址不合法';
         } else {
             Address::add([
-                'sex'=> $sex,
                 'name' => $name,
                 'tel' => $phone,
                 'province_id' => $provinceId,
@@ -70,6 +69,7 @@ class AddressController extends Controller
                 'area_id' => $areaId,
                 'location' => $detail,
                 'state' => 1,
+                'user_id' => $user->id,
                 'created_at' => time(),
             ]);
         }
@@ -84,7 +84,7 @@ class AddressController extends Controller
     {
         $id = $request->route()[2]['id'];
         $address = new Address();
-        return $address->getFullAddr($id);
+        return $address->getFullAddr($request->user->id, $id);
     }
     /**
      * [更新地址信息]
@@ -94,7 +94,6 @@ class AddressController extends Controller
     public function update(Request $request)
     {
         $rules = [
-            'sex' => 'integer|max:1',
             'name' => 'required|string',
             'phone' => 'required|string|regex:[\d{11}]',
             'province' => 'required|integer|max:820000|min:110000',
@@ -104,9 +103,9 @@ class AddressController extends Controller
         ];
         $this->validate($request, $rules);
         $id = $request->route()[2]['id'];
+        $user = $request->user;
         $name = $request->input('name');
         $phone = $request->input('phone');
-        $sex = $request->input('sex', 0);
         $provinceId = $request->input('province');
         $cityId = $request->input('city');
         $areaId = $request->input('area');
@@ -116,14 +115,15 @@ class AddressController extends Controller
             $rsp['state'] = 1;
             $rsp['msg'] = '该地址不合法';
         }
-        Address::modify($id, [
-            'sex'=> $sex,
+        Address::modify([
+            'id' => $id,
             'name' => $name,
             'tel' => $phone,
             'province_id' => $provinceId,
             'city_id' => $cityId,
             'area_id' => $areaId,
             'location' => $detail,
+            'user_id' => $request->user->id,
             'state' => 1,
         ]);
         return $rsp;
@@ -136,7 +136,7 @@ class AddressController extends Controller
     public function delete(Request $request)
     {
         $id = $request->route()[2]['id'];
-        Address::remove($id);
+        Address::remove($request->user->id, $id);
         return config('wx.msg');
     }
     /**
@@ -145,8 +145,8 @@ class AddressController extends Controller
      */
     public function setDefault(Request $request)
     {
-        $goodsCarId = $request->route()[2]['id'];
-        GoodsCar::setDefault($goodsCarId);
+        $addressId = $request->route()[2]['id'];
+        Address::setDefault($request->user->id, $addressId);
         return config('wx.msg');
     }
     public function getProvince()

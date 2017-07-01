@@ -111,36 +111,92 @@
         unset($arr);
         return $arrs;
     }
-
+    /**
+     * [formatTime description]
+     * @param  [type] $timestamp [description]
+     * @return [type]            [description]
+     */
     function formatTime($timestamp) {
         return date('Y年n月d日 H:i:s', $timestamp);
     }
+    /**
+     * [formatM description]
+     * @param  [type] $timestamp [description]
+     * @return [type]            [description]
+     */
     function formatM($timestamp) {
         return date('n月d日', $timestamp);
     }
+    /**
+     * [formatD description]
+     * @param  [type] $timestamp [description]
+     * @return [type]            [description]
+     */
     function formatD($timestamp) {
         $diff = $timestamp - time();
         $D =  intval($diff/86400);
         $H = intval($diff%86400/3600);
         return $D.'天'.$H.'小时';
     }
-    function getAddrId($address, $addrID) {
-        if(is_null($addrID)) {
-            $addrDetail = $address->get();
-        } else {
-            $addrDetail = $address->get($addrID);
-        }
-        if(empty($addrDetail)) {
-            return null;
-        } else {
-            return $addrDetail->id;
-        }
-    }
+    /**
+     * [getGoodsCarIds description]
+     * @param  [type] $orderGoodsObj [description]
+     * @return [type]                [description]
+     */
     function getGoodsCarIds($orderGoodsObj) {
         $goodsCars = [];
         foreach ($orderGoodsObj as $orderGoods) {
             $goodsCars[] = $orderGoods->goods_car_id;
         }
         return $goodsCars;
+    }
+        /**
+     *  post提交数据
+     * @param  string $url 请求Url
+     * @param  array $datas 提交的数据
+     * @return url响应返回的html
+     */
+    function sendPost($url, $datas) {
+        $temps = array();
+        foreach ($datas as $key => $value) {
+            $temps[] = sprintf('%s=%s', $key, $value);
+        }
+        $post_data = implode('&', $temps);
+        $url_info = parse_url($url);
+        if(empty($url_info['port']))
+        {
+            $url_info['port']=80;
+        }
+        $httpheader = "POST " . $url_info['path'] . " HTTP/1.0\r\n";
+        $httpheader.= "Host:" . $url_info['host'] . "\r\n";
+        $httpheader.= "Content-Type:application/x-www-form-urlencoded\r\n";
+        $httpheader.= "Content-Length:" . strlen($post_data) . "\r\n";
+        $httpheader.= "Connection:close\r\n\r\n";
+        $httpheader.= $post_data;
+        $fd = fsockopen($url_info['host'], $url_info['port']);
+        fwrite($fd, $httpheader);
+        $gets = "";
+        $headerFlag = true;
+        while (!feof($fd)) {
+            if (($header = @fgets($fd)) && ($header == "\r\n" || $header == "\n")) {
+                break;
+            }
+        }
+        while (!feof($fd)) {
+            $gets.= fread($fd, 128);
+        }
+        fclose($fd);
+
+        return $gets;
+    }
+
+    /**
+     * 电商Sign签名生成
+     * @param data 内容
+     * @param appkey Appkey
+     * @return DataSign签名
+     */
+    function myEncrypt($data, $appkey) {
+        return urlencode(base64_encode(md5($data.$appkey)));
     }
 ?>

@@ -19,7 +19,13 @@ class Goods
                             ['start_time', '<', $time],
                             ['end_time', '>', $time]
                         ])
-                        ->select(['title', 'description', 'origin_price', 'price', 'unit', 'send_time'])
+                        ->select(['id', 'title', 'description', 'origin_price', 'price', 'unit', 'send_time', 'goods_img', 'classes_id'])
+                        ->first();
+    }
+    public static function getNoDiff($id)
+    {
+        return app('db')->table(self::$model)
+                        ->where('id', $id)
                         ->first();
     }
     /**
@@ -36,7 +42,7 @@ class Goods
             ['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'goods_img', 'classes_id', 'unit', 'send_time']
         )
         ->where([['end_time', '>=', $nowTime]])
-        ->offset($page - 1)
+        ->offset(($page - 1)*$limit)
         ->limit($limit)
         ->orderBy('id','desc')
         ->get();
@@ -61,6 +67,11 @@ class Goods
         ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'detail', 'classes_id', 'unit', 'send_time'])
         ->first();
         return $goods;
+    }
+    public static function add($goodsArr)
+    {
+        return app('db')->table(self::$model)
+                        ->insert($goodsArr);
     }
 }
 ?>

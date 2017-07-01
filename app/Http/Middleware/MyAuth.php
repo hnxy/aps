@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Routing\Router;
-use app\Models\User;
+use App\Models\User;
 use App\Exceptions\ApiException;
 
 

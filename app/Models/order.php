@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Goods;
 use App\Models\Coupon;
+use App\Models\Express;
 use App\Exceptions\ApiException;
 
 class Order
@@ -24,11 +25,12 @@ class Order
      * @param  [integer] $id [订单ID]
      * @return [Object]     [包含订单信息的对象]
      */
-    public static function get($id)
+    public static function get($userId, $id)
     {
         return app('db')->table(self::$model)
                         ->where([
                             ['id', '=', $id],
+                            ['user_id', '=', $userId],
                         ])
                         ->first();
     }
@@ -50,11 +52,20 @@ class Order
                 throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
             }
             $all_price += $goodsInfo->price*$goodsCar->goods_num;
-            $tmp['id'] = $goodsCar->id;
+            $tmp['goods_car_id'] = $goodsCar->id;
+            $tmp['description'] = $goodsInfo->description;
             $tmp['title'] = $goodsInfo->title;
             $tmp['price'] = $goodsInfo->price;
             $tmp['unit'] = $goodsInfo->unit;
+            $tmp['img'] = $goodsInfo->goods_img;
             $tmp['num'] = $goodsCar->goods_num;
+            $tmp['logistics_num'] = $goodsCar->logistics_num;
+            $express = null;
+            if(!is_null($goodsCar->express_id)) {
+                $express = Express::get($goodsCar->express_id);
+                $express->phone = config("wx.express_offic_phone.{$express->code}");
+            }
+            $tmp['express_info'] = $express;
             $goodsInfos[] = $tmp;
         }
         if(!is_null($value)) {
@@ -102,10 +113,13 @@ class Order
      * @param  [integer] $id [订单ID]
      * @return [integer]     [返回影响的行数]
      */
-    public static function remove($id)
+    public static function remove($userId, $id)
     {
         return app('db')->table(self::$model)
-                        ->where('id', $id)
+                        ->where([
+                            ['id', '=', $id],
+                            ['user_id', '=', $userId],
+                        ])
                         ->delete();
     }
     /**
@@ -113,19 +127,32 @@ class Order
      * @param  integer $state [状态码]
      * @return [Object]         [包含该类型的对象]
      */
-    public static function mget($limit, $page, $state)
+    public static function mget($userId, $limit, $page, $state)
     {
         if($state === '-1') {
         return app('db')->table(self::$model)
                         ->limit($limit)
                         ->offset($page-1)
+                        ->where('user_id', $userId)
                         ->get();
         }
         return app('db')->table(self::$model)
                         ->limit($limit)
-                        ->offset($page-1)
-                        ->where('order_status', $state)
+                        ->offset(($page-1)*$limit)
+                        ->where([
+                            ['user_id', '=', $userId],
+                            ['order_status', '=', $state],
+                        ])
                         ->get();
+    }
+    public static function modify($upArr)
+    {
+        return app('db')->table(self::$model)
+                        ->where([
+                            ['id', '=', $upArr['id']],
+                            ['user_id', '=', $upArr['user_id']],
+                        ])
+                        ->update($upArr);
     }
 }
 ?>
