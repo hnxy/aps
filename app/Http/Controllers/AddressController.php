@@ -98,7 +98,7 @@ class AddressController extends Controller
             'phone' => 'required|string|regex:[\d{11}]',
             'province' => 'required|integer|max:820000|min:110000',
             'city' => 'required|integer|max:820100|min:110100',
-            'area' => 'required|integer|max:820105|min:110101',
+            'area' => 'required|integer|max:659004003|min:110101',
             'detail' => 'required|string|max:127',
         ];
         $this->validate($request, $rules);
@@ -149,42 +149,6 @@ class AddressController extends Controller
         $addressId = $request->route()[2]['id'];
         Address::setDefault($request->user->id, $addressId);
         return config('wx.msg');
-    }
-    public function getProvince()
-    {
-        $rsp = config('wx.addr');
-        $rsp['state'] = 0;
-        $rsp['items'] = Province::mget();
-        $rsp['num'] = count($rsp['items']);
-        return $rsp;
-    }
-    public function getCity(Request $request)
-    {
-        $rules = [
-            'province' => 'required|integer|max:820000|min:110000',
-        ];
-        $this->validate($request, $rules);
-        $provinceId = $request->input('province');
-        $rsp = config('wx.addr');
-        $rsp['state'] = 0;
-        $rsp['items'] = City::mget($provinceId);
-        $rsp['num'] = count($rsp['items']);
-        return $rsp;
-    }
-    public function getArea(Request $request)
-    {
-        $rules = [
-            'province' => 'required|integer|max:820000|min:110000',
-            'city' => 'required|integer|max:820100|min:110100',
-        ];
-        $this->validate($request, $rules);
-        $provinceId = $request->input('province');
-        $cityId = $request->input('city');
-        $rsp = config('wx.addr');
-        $rsp['state'] = 0;
-        $rsp['items'] = Area::mget($provinceId, $cityId);
-        $rsp['num'] = count($rsp['items']);
-        return $rsp;
     }
 }
 ?>

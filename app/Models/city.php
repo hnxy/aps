@@ -14,14 +14,6 @@ class City
                         ])
                         ->first();
     }
-    public static function mget($provinceId)
-    {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['province_id', '=', $provinceId],
-                        ])
-                        ->get();
-    }
 }
 
 ?>

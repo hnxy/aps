@@ -14,11 +14,6 @@ class Province
                         ])
                         ->first();
     }
-    public static function mget()
-    {
-        return app('db')->table(self::$model)
-                        ->get();
-    }
 }
 
 ?>

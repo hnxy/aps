@@ -14,15 +14,6 @@ class Area
                         ])
                         ->first();
     }
-    public static function mget($provinceId, $cityId)
-    {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['province_id', '=', $provinceId],
-                            ['city_id', '=', $cityId],
-                        ])
-                        ->get();
-    }
     public static function checkAddrWork($provinceId, $cityId, $areaId)
     {
         $res = app('db')->table(self::$model)

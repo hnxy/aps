@@ -54,11 +54,6 @@ $app->group(['prefix' => '/v1'], function() use ($app) {
         $app->get('/', 'GoodsController@index');
         $app->get('/{id}', 'GoodsController@show');
     });
-    $app->group(['prefix' => '/address'], function() use ($app) {
-        $app->get('/province', 'AddressController@getProvince');
-        $app->get('/city', 'AddressController@getCity');
-        $app->get('/area', 'AddressController@getArea');
-    });
     $app->group(['prefix' => '/coupon'], function() use ($app) {
         $app->post('/', 'CouponController@store');
         $app->get('/', 'CouponController@getCode');
