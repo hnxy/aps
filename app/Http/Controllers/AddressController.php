@@ -136,8 +136,9 @@ class AddressController extends Controller
     public function delete(Request $request)
     {
         $id = $request->route()[2]['id'];
-        Address::remove($request->user->id, $id);
-        return config('wx.msg');
+        if(Address::remove($request->user->id, $id)) {
+             return config('wx.msg');
+        }
     }
     /**
      * [设为默认收货地址]
