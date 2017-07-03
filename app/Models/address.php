@@ -50,6 +50,8 @@ class Address
         } else {
             // 根据获取的地址的详细信息来获取省,市,县区的名称
             $provinceName = Province::get($addrDetail->province_id)->name;
+            var_dump($addrDetail->city_id);
+            exit;
             $cityName = City::get($addrDetail->city_id)->name;
             $areaName = Area::get($addrDetail->area_id)->area_name;
             $fullAddr = $provinceName.$cityName.$areaName.$addrDetail->location;

@@ -114,18 +114,19 @@ class AddressController extends Controller
         if(!Area::checkAddrWork($provinceId, $cityId, $areaId)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '该地址不合法';
+        } else {
+            Address::modify([
+                'id' => $id,
+                'name' => $name,
+                'tel' => $phone,
+                'province_id' => $provinceId,
+                'city_id' => $cityId,
+                'area_id' => $areaId,
+                'location' => $detail,
+                'user_id' => $request->user->id,
+                'state' => 1,
+            ]);
         }
-        Address::modify([
-            'id' => $id,
-            'name' => $name,
-            'tel' => $phone,
-            'province_id' => $provinceId,
-            'city_id' => $cityId,
-            'area_id' => $areaId,
-            'location' => $detail,
-            'user_id' => $request->user->id,
-            'state' => 1,
-        ]);
         return $rsp;
     }
     /**
