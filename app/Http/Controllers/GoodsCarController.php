@@ -122,4 +122,10 @@ class GoodsCarController extends Controller
         GoodsCar::updateState($request->user->id, (array) $goodsCarId, 2);
         return config('wx.msg');
     }
+    public function getAll(Request $request)
+    {
+        $rsp = config('wx.msg');
+        $rsp['num'] = GoodsCar::getAllNum($request->user->id);
+        return $rsp;
+    }
 }
