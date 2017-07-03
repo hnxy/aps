@@ -119,7 +119,7 @@ class GoodsCarController extends Controller
     public function delete(Request $request)
     {
         $goodsCarId = $request->route()[2]['id'];
-        GoodsCar::remove($request->user->id, $goodsCarId);
+        GoodsCar::updateState($request->user->id, (array) $goodsCarId, 2);
         return config('wx.msg');
     }
 }

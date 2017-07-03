@@ -157,11 +157,11 @@ class OrderController extends Controller
         $rsp = config('wx.msg');
         try {
             app('db')->beginTransaction();
-            //订单删除不成功
-            if(!Order::remove($request->user->id, $id)) {
-                throw new ApiException("删除订单异常", 0);
-            }
-            OrderGoods::remove($id);
+            Order::modify([
+                'user_id' => $request->user->id,
+                'id' => $id,
+                'order_status' => 4,
+            ]);
             app('db')->commit();
         } catch(Exceptions $e) {
             $rsp['state'] = 1;
@@ -233,7 +233,7 @@ class OrderController extends Controller
             $upMsg['pay_time'] = time();
         }
         if($request->has('pay_by')) {
-            $upMsg['pay_by'] = $request->input('pay_status');
+            $upMsg['pay_by'] = $request->input('pay_by');
         }
         if($request->has('order_status')) {
             $upMsg['order_status'] = $request->input('order_status');
