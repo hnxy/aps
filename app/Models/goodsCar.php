@@ -127,24 +127,13 @@ class GoodsCar
     }
     public static function getAllNum($userId)
     {
-        $totle = 0;
-        $limit = 30;
-        $page = 1;
-        do {
-            $goodsCars = app('db')->table(self::$model)
-                                  ->where([
-                                        ['user_id', '=', $userId],
-                                        ['state', '=', 0]
-                                    ])
-                                  ->limit($limit)
-                                  ->offset(($page - 1) * $limit)
-                                  ->get();
-            foreach ($goodsCars as $goodsCar) {
-                $totle += $goodsCar->goods_num;
-            }
-            $page++;
-        } while(!empty(obj2arr($goodsCars)));
-        return $totle;
+
+        return app('db')->table(self::$model)
+                        ->where([
+                            ['user_id', '=', $userId],
+                            ['state', '=', 0]
+                        ])
+                        ->count();
     }
 }
 ?>
