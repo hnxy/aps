@@ -4,10 +4,11 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Routing\Router;
-use App\Models\User;
+use App\Models\Agent;
 use App\Exceptions\ApiException;
 
-class MyAuth
+
+class AgentAuth
 {
     /**
      * Handle an incoming request.
@@ -19,19 +20,20 @@ class MyAuth
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        $user = $request->route()[2]['user_id'];
+        $agentId = $request->route()[2]['agent_id'];
+        $agent = Agent::get($agentId);
         $token = getToken($request);
         $time = time();
-        $primaryKey = $user->getPrimaryKey();
-        if (is_null($user->$primaryKey)) {
+        if (empty($agent)) {
             throw new ApiException("", 1, 404);
         }
-        if (empty($token) || $token != $user->token) {
+        if (empty($token) || $token != $agent->token) {
             throw new ApiException("token不正确", 3, 401);
         }
-        if ($user->token_expired < $time) {
+        if ($agent->token_expired < $time) {
             return response("登录已经过期", 401);
         }
+        $request->agent = $agent;
         return $next($request);
     }
 }
