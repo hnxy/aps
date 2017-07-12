@@ -10,6 +10,8 @@ use App\Exceptions\ApiException;
 class UserController extends Controller
 {
 
+
+
     /**
      * @param  Request [注入Request实例]
      * @return [Object] [返回用户信息的对象]
@@ -38,12 +40,23 @@ class UserController extends Controller
     }
     /**
      * @param  Request [注入Request实例]
+     * @param  Request [注入\App\Models\User实例]
      * @return [包含用户信息的数组]
      */
-    public static function get(Request $request)
+    public static function get(Request $request, $user)
     {
-        return $request->user;
+        return $user;
     }
+
+    /**
+     * @param  Request [注入Request实例]
+     * @return [包含用户信息的数组]
+     */
+    public static function mget(Request $request, $user)
+    {
+        return (new User())->mget();
+    }
+
     /**
      * [token验证]
      * @param  Request $request [获取request实例]

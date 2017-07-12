@@ -4,20 +4,23 @@ namespace App\Models;
 
 use DB;
 use App\Exceptions\ApiException;
+use App\Models\Db\User as DbUser;
+use ReflectionClass;
 
-class User
+class User extends Model
 {
 
-    public static $model = "user";
+    public static $model = 'User';
 
-    /**
-     * [通过id获取永固实例]
-     * @param  [int] $id [id]
-     * @return [Object]     [包含用户信息的对象]
-     */
-    public static function get($id)
+    public function mget()
     {
-        return app('db')->table(self::$model)->where(['id' => $id])->first();
+        return DbUser::mget();
+    }
+
+    public function get($id)
+    {
+        $this->primaryValue = $id;
+        return $this;
     }
 
 

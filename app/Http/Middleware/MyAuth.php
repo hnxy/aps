@@ -7,7 +7,6 @@ use Illuminate\Routing\Router;
 use app\Models\User;
 use App\Exceptions\ApiException;
 
-
 class MyAuth
 {
     /**
@@ -20,11 +19,11 @@ class MyAuth
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        $userId = $request->route()[2]['user_id'];
-        $user = User::get($userId);
+        $user = $request->route()[2]['user_id'];
         $token = getToken($request);
         $time = time();
-        if (empty($user)) {
+        $primaryKey = $user->getPrimaryKey();
+        if (is_null($user->$primaryKey)) {
             throw new ApiException("", 1, 404);
         }
         if (empty($token) || $token != $user->token) {
@@ -33,7 +32,6 @@ class MyAuth
         if ($user->token_expired < $time) {
             return response("登录已经过期", 401);
         }
-        $request->user = $user;
         return $next($request);
     }
 }
