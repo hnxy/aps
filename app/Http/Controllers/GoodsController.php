@@ -55,6 +55,9 @@ class GoodsController extends Controller
                     'can_click' => 1,
                     ];
             }
+            $goods->start_time_text =formatTime($goods->start_time);
+            $goods->end_time_text =formatTime($goods->end_time);
+            $goods->leave_end_time_text =formatD($goods->end_time);
         }
         unset($goods);
         return $goodses;
@@ -75,8 +78,8 @@ class GoodsController extends Controller
             throw new ApiException('该商品已过期,请选择其他商品',config('error.goods_expire_err.code'));
         }
         if( time() < $goodsInfo->start_time) {
+            $goodsInfo->status_text = '即将开售';
             $goodsDetail = [
-                'status_text' => '即将开售',
                 'buy' => [
                     'text' => '立即购买',
                     'can_click' => 0,
@@ -87,8 +90,8 @@ class GoodsController extends Controller
                     ],
             ];
         } else {
+            $goodsInfo->status_text = null;
             $goodsDetail = [
-                'status_text' => null,
                 'buy' => [
                     'text' => '立即购买',
                     'can_click' => 0,
@@ -99,8 +102,13 @@ class GoodsController extends Controller
                     ],
             ];
         }
-        $goodsDetail['detail'] = $goodsInfo->detail;
-        $goodsDetail['goods_imgs'] = $goodsImgs->mget($id);
+        $goodsInfo->start_time_text = formatTime($goodsInfo->start_time);
+        $goodsInfo->end_time_text = formatTime($goodsInfo->end_time);
+        $goodsInfo->leave_end_time_text  = formatD($goodsInfo->end_time);
+        $goodsDetail['detail'] = $goodsInfo;
+        $goodsDetail['goods_imgs'] = array_map(function($img) {
+            return $img['goods_img'];
+        }, obj2arr($goodsImgs->mget($id)));
         $goodsDetail['category'] = $goodsClasses->get($goodsInfo->id);
         return $goodsDetail;
     }
