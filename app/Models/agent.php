@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
-class Agent
-{
-    private static $model = 'agent';
+use App\Models\Db\Agent as DbAgent;
 
-    public static function add($AgentArr)
+class Agent extends Model
+{
+    public static $model = 'Agent';
+    public static function get($agentId)
     {
-        return app('db')->table(self::$model)
-                        ->insert($AgentArr);
+        return DbAgent::get(['where' => ['id' => $agentId] ]);
+    }
+
+    public static function add($arr)
+    {
+        return DbAgent::add($arr);
     }
      /**
      * [login description]
@@ -20,9 +25,7 @@ class Agent
      */
     public function login($userArr)
     {
-        $user = app('db')->table(self::$model)->where([
-                'username' => $userArr['username']
-            ])->first();
+        $user = DbAgent::get(['where' => ['username' => $userArr['username']] ]);
         if (empty($user)) {
             throw new ApiException("此用户不存在", 2);
         }
@@ -32,21 +35,24 @@ class Agent
         }
         $token = genToken();
         $lastLoginTime = time();
-        static::updateById($user->id, [
+        $arr['where'] = ['id' => $user->id];
+        $arr['update'] = [
             'last_login_time' => $lastLoginTime,
             'login_count' => $user->login_count + 1,
             'token' => $token,
             'token_expired' => $lastLoginTime + 3600 * 24,
             'user_agent' => $userArr['user_agent'],
             'last_ip' => $userArr['last_ip'],
-            ]
-        );
+            ];
+        DbAgent::update($arr);
         return ['id' => $user->id, 'token' => $token]   ;
     }
-
-    private static function updateById($userId, $arr)
+    public static function has($agentId)
     {
-        return app('db')->table(self::$model)->where(['id' => $userId])->update($arr);
+        if(empty($agent = static::get($agentId))) {
+            return false;
+        }
+        return true;
     }
 }
 

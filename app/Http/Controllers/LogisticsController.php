@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Exceptions\ApiException;
 use App\Models\Logistics;
-use App\Models\GoodsCar;
 use App\Models\Order;
 use App\Models\Goods;
 use App\Models\Express;
@@ -13,32 +12,20 @@ use App\Models\Express;
 class LogisticsController extends Controller
 {
 
-    public function getOrderTraces(Request $request)
+    public function getOrderTraces(Request $request, $user)
     {
-        $rules = [
-            'goods_car_id' => 'required|integer',
-            'order_id' => 'required|integer',
-        ];
-        $this->validate($request, $rules);
-        $goodsCarId = $request->input('goods_car_id');
-        $orderId = $request->input('order_id');
-        $user = $request->user;
-        $goodsCar = GoodsCar::get($user->id, $goodsCarId);
-        if(empty($goodsCar)) {
-            throw new ApiException(config('error.goods_car_empty_err.msg'), config('error.goods_car_empty_err.code'));
-        }
+        $orderId = $request->route()[2]['id'];
         $orderInfo = Order::get($user->id, $orderId);
         if(empty($orderInfo)) {
             throw new ApiException(config('error.order_empty_err.msg'), config('error.order_empty_err.code'));
         }
-        if(!in_array($goodsCarId, explode(',', $orderInfo->goods_car_ids))) {
-            throw new ApiException(config('error.order_goods_car_diff_err.msg'), config('error.order_goods_car_diff_err.code'));
+        if($orderInfo->order_status != 3 && $orderInfo->order_status != 4) {
+            throw new ApiException('该订单还没有物流', config('error.no_traces_exception.code'));
         }
-        $goods = Goods::getNoDiff($goodsCar->goods_id);
-        $express = Express::get($goodsCar->express_id);
-
+        $goods = Goods::getDetail($orderInfo->goods_id);
+        $express = Express::get($orderInfo->express_id);
         $expressCode = $express->code;
-        $logisticsCode = $goodsCar->logistics_num;
+        $logisticsCode = $orderInfo->logistics_code;
         $requestData = <<<Data
         {
             "OrderCode":"",

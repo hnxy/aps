@@ -2,27 +2,23 @@
 
 namespace App\Models;
 
-class Area
+use App\Models\Db\Area as DbArea;
+
+class Area extends Model
 {
-    private static $model = 'area';
+    public static $model = 'Area';
 
     public static function get($id)
     {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['area_id', '=', $id],
-                        ])
-                        ->first();
+        return DbArea::get(['where' => ['area_id' => $id ]]);
     }
     public static function checkAddrWork($provinceId, $cityId, $areaId)
     {
-        $res = app('db')->table(self::$model)
-                        ->where([
+        $res = DbArea::get(['where' => [
                             ['province_id', '=', $provinceId],
                             ['city_id', '=', $cityId],
                             ['area_id', '=', $areaId],
-                        ])
-                        ->first();
+                        ]]);
         if(empty($res)) {
             return false;
         }

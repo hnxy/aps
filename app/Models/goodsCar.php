@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-class GoodsCar
+use App\Models\Db\GoodsCar as DbGoodsCar;
+
+class GoodsCar extends Model
 {
-    private static $model = 'goods_car';
+    public static $model = 'GoodsCar';
     /**
      * [更新购物车状态]
      * @param  [Array]  $goodsCarIDs [购物车ID集合]
@@ -13,12 +15,11 @@ class GoodsCar
      */
     public static function updateState($userId, $goodsCarIDs, $state = 0)
     {
-        return  app('db')->table(self::$model)
-                     ->where([
-                        ['user_id', '=', $userId],
-                    ])
-                     ->whereIn('id', $goodsCarIDs)
-                     ->update(['state' => $state]);
+        $arr['where'] = ['user_id' => $userId];
+        $arr['whereIn']['key'] = 'id';
+        $arr['whereIn']['values'] = $goodsCarIDs;
+        $arr['update'] = ['state' => $state];
+        return  DbGoodsCar::mModify($arr);
     }
     /**
      * [更新购物车商品数量]
@@ -28,12 +29,12 @@ class GoodsCar
      */
     public static function updateGoodsNum($userId, $goodsCarId, $goodsNum)
     {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['id', '=', $goodsCarId],
-                            ['user_id', '=', $userId],
-                        ])
-                        ->update(['goods_num' => $goodsNum]);
+        $arr['where'] = [
+            ['user_id', '=', $userId],
+            ['id', '=', $goodsCarId],
+        ];
+        $arr['update'] = ['goods_num' => $goodsNum];
+        return DbGoodsCar::modify($arr);
     }
     /**
      * [通过购物车ID获取购物车信息集合]
@@ -43,13 +44,7 @@ class GoodsCar
      */
     public static function mget($userId, $goodsCarIDs, $state = 0)
     {
-        return  app('db')->table(self::$model)
-                         ->where([
-                            ['user_id', '=', $userId],
-                            ['state', '=', $state],
-                         ])
-                         ->whereIn('id', $goodsCarIDs)
-                         ->get();
+        return  DbGoodsCar::mget($userId, $goodsCarIDs, $state);
     }
     /**
      * [添加购物车信息]
@@ -58,8 +53,7 @@ class GoodsCar
      */
     public static function add($msg)
     {
-        return app('db')->table(self::$model)
-                        ->insertGetId($msg);
+        return DbGoodsCar::add($msg);
     }
     /**
      * [获取购物车条目]
@@ -69,15 +63,7 @@ class GoodsCar
      */
     public static function getItems($userId, $limit, $page)
     {
-        return app('db')->table(self::$model)
-                        ->limit($limit)
-                        ->offset(($page - 1) * $limit)
-                        ->where([
-                            ['user_id', '=', $userId],
-                            ['state', '=', 0]
-                        ])
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+        return DbGoodsCar::getItems($userId, $limit, $page);
     }
     /**
      * [删除购物车]
@@ -86,12 +72,7 @@ class GoodsCar
      */
     public static function remove($userId, $goodsCarId)
     {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['user_id', '=', $userId],
-                            ['id', '=', $goodsCarId]
-                        ])
-                        ->delete();
+        return DbGoodsCar::remove($userId, $goodsCarId);
     }
     /**
      * [hasGoods description]
@@ -101,39 +82,22 @@ class GoodsCar
      */
     public static function hasGoods($userId, $id)
     {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['goods_id', '=', $id],
-                            ['user_id', '=', $userId],
-                            ['state', '=', 0],
-                        ])
-                        ->first();
-
-    }
-    public static function addLogistics($goodsCarIds, $goodsCarArr)
-    {
-        return app('db')->table(self::$model)
-                        ->whereIn('id', $goodsCarIds)
-                        ->update($goodsCarArr);
+        return DbGoodsCar::get(['where' => [
+                ['goods_id', '=', $id],
+                ['user_id', '=', $userId],
+                ['state', '=', 0],
+            ]]);
     }
     public static function get($userId, $id)
     {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['id', '=', $id],
-                            ['user_id', '=', $userId],
-                        ])
-                        ->first();
+        return DbGoodsCar::get(['where' => [
+                ['user_id', '=', $userId],
+                ['id', '=', $id],
+            ]]);
     }
     public static function getAllNum($userId)
     {
-
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['user_id', '=', $userId],
-                            ['state', '=', 0]
-                        ])
-                        ->count();
+        return DbGoodsCar::getAllNum($userId);
     }
 }
 ?>

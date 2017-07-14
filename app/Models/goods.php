@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-class Goods
+use App\Models\Db\Goods as DbGoods;
+
+class Goods extends Model
 {
-    private static $model = 'goods';
+    public static $model = 'Goods';
     /**
      * [获取商品信息]
      * @param  [Integer] $id [商品ID]
@@ -13,20 +15,20 @@ class Goods
     public static function get($id)
     {
         $time = time();
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['id', '=', $id],
-                            ['start_time', '<', $time],
-                            ['end_time', '>', $time]
-                        ])
-                        ->select(['id', 'title', 'description', 'origin_price', 'price', 'unit', 'send_time', 'goods_img', 'classes_id'])
-                        ->first();
-    }
-    public static function getNoDiff($id)
-    {
-        return app('db')->table(self::$model)
-                        ->where('id', $id)
-                        ->first();
+        $goodsInfo = DbGoods::get(['where' =>
+            ['id' => $id],
+          ]);
+        if(empty($goodsInfo)) {
+            return null;
+        }
+        if($time >= $goodsInfo->start_time && $time < $goodsInfo->end_time) {
+            $goodsInfo->status = 0;
+            $goodsInfo->status_text = null;
+        } else {
+            $goodsInfo->status = 1;
+            $goodsInfo->status_text = '该商品未开售或者已过期';
+        }
+        return $goodsInfo;
     }
     /**
      * [获取商品的条目]
@@ -36,17 +38,7 @@ class Goods
      */
     public static function mget($limit, $page)
     {
-        $nowTime = time();
-        $goods = app('db')->table(self::$model)
-        ->select(
-            ['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'goods_img', 'classes_id', 'unit', 'send_time']
-        )
-        ->where([['end_time', '>=', $nowTime]])
-        ->offset(($page - 1)*$limit)
-        ->limit($limit)
-        ->orderBy('id','desc')
-        ->get();
-        return $goods;
+        return DbGoods::mget($limit, $page);
     }
 
     /**
@@ -56,18 +48,45 @@ class Goods
      */
     public static function getDetail($id)
     {
-        $goods = app('db')->table(self::$model)
-        ->where([
-                ['id', '=', $id],
-            ])
-        ->select(['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'detail', 'classes_id', 'goods_img', 'unit', 'send_time'])
-        ->first();
-        return $goods;
+        return DbGoods::get(['where' =>
+            ['id' => $id],
+          ]);
     }
     public static function add($goodsArr)
     {
-        return app('db')->table(self::$model)
-                        ->insert($goodsArr);
+        return DbGoods::add($goodsArr);
+    }
+    public  function isAbnormal($goodsCars)
+    {
+        $goods = [];
+        foreach ($goodsCars as $goodsCar) {
+            $goods[$goodsCar->goods_id] = $goodsCar->goods_num;
+        }
+        $time = time();
+        $goodsInfos = DbGoods::mgetByIds($goods);
+        foreach ($goodsInfos as $goodsInfo) {
+            if($time < $goodsInfo->start_time || $time >= $goodsInfo->end_time) {
+                return [
+                    'msg' => "商品{$goodsInfo->title}未开售或者已下架",
+                    'code' => config('error.add_goods_exception.code')
+                ];
+            }
+            if($goodsInfo->stock < $goods[$goodsInfo->id]) {
+                return [
+                    'msg' => "商品{$goodsInfo->title}库存不够",
+                    'code' => config('error.goods_not_enough_exception.code')
+                ];
+            }
+        }
+        return false;
+    }
+
+    public static function modifyStock($goods, $type = 'increment') {
+        DbGoods::modifyStock($goods, $type);
+    }
+    public static function mgetByIds($goodsIds)
+    {
+        return DbGoods::mgetByIds($goodsIds);
     }
 }
 ?>

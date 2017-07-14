@@ -12,5 +12,8 @@
         'order_empty_err' => ['msg' =>'该订单不存在', 'code' => 10],
         'order_goods_car_diff_err' => ['msg' =>'订单信息与购物车不一致', 'code' => 11],
         'logistics_request_err' => ['msg' => '', 'code' => 12],
+        'goods_not_enough_exception' => ['msg' => '', 'code' => 13],
+        'no_traces_exception' => ['msg' => '', 'code' => 14],
+        'not_work_coupon_exception' => ['msg' => '', 'code' => 15],
     ];
 ?>

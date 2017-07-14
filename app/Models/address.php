@@ -5,66 +5,44 @@ namespace App\Models;
 use App\Models\Province;
 use App\Models\City;
 use App\Models\Area;
+use App\Models\Db\Address as DbAddress;
 
-class Address
+class Address extends Model
 {
-    private static $model = 'address';
-    /**
-     * [获取地址信息]
-     * @param  [Integer] $id [地址的ID]
-     * @return [Object]     [地址信息对象]
-     */
-    public static function get($userId, $id = null)
+    public static $model = 'Address';
+    public static function get($userId, $addrId = null)
     {
-        if(is_null($id)) {
-            return app('db')->table(self::$model)
-                            ->where([
-                                ['state', '=', '0'],
-                                ['user_id', '=', $userId],
-                            ])
-                            ->first();
-        } else {
-            return app('db')->table(self::$model)
-                            ->where([
-                                ['id', '=', $id],
-                                ['user_id', '=', $userId],
-                            ])
-                            ->first();
-        }
+        return DbAddress::get($userId, $addrId);
     }
     /**
      * [获取完整的地址]
      * @param  [Integer] $addrID [地址ID]
      * @return [Array]         [完整地址信息的数组]
      */
-    public function getFullAddr($userId, $addrID) {
+    public function getFullAddr($userId, $addrId) {
         $rsp = config('wx.msg');
-        if(empty($addrID)) {
+        if(empty($addrId)) {
             $addrDetail = $this->get($userId);
         } else {
-            $addrDetail = $this->get($userId, $addrID);
+            $addrDetail = $this->get($userId, $addrId);
         }
-        if(empty($addrDetail)) {
+        if(empty($addrDetail) || $addrDetail->state == 2) {
             $rsp['state'] = 1;
             $rsp['msg'] =  ['请填写你的收获地址'];
         } else {
             // 根据获取的地址的详细信息来获取省,市,县区的名称
             $provinceName = Province::get($addrDetail->province_id)->name;
-            var_dump($addrDetail->city_id);
-            exit;
             $cityName = City::get($addrDetail->city_id)->name;
             $areaName = Area::get($addrDetail->area_id)->area_name;
             $fullAddr = $provinceName.$cityName.$areaName.$addrDetail->location;
+            $addrDetail->provinceName = $provinceName;
+            $addrDetail->cityName = $cityName;
+            $addrDetail->areaName = $areaName;
+            $addrDetail->state = !$addrDetail->state ? true : false;
+            $addrDetail->fullAddr = $fullAddr;
             $rsp['state'] = 0;
-            $rsp['msg'] =  [
-                        'id' => $addrDetail->id,
-                        'name' => $addrDetail->name,
-                        'phone' => $addrDetail->tel,
-                        'state' => $addrDetail->state ? true : false,
-                        'fullAddr' => $fullAddr,
-            ];
+            $rsp['msg'] = $addrDetail;
         }
-
         return $rsp;
     }
     /**
@@ -73,11 +51,7 @@ class Address
      */
     public static function add($addrArr)
     {
-        if(empty(static::get($addrArr['user_id']))) {
-            $addrArr['state'] = 0;
-        }
-        return app('db')->table(self::$model)
-                        ->insert($addrArr);
+        return DbAddress::add($addrArr);
     }
     /**
      * [获取地址信息条目]
@@ -87,65 +61,36 @@ class Address
      */
     public static function mget($userId, $limit, $page)
     {
-        return app('db')->table(self::$model)
-                        ->limit($limit)
-                        ->offset(($page-1)*$limit)
-                        ->where('user_id', $userId)
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+        return DbAddress::mget($userId, $limit, $page);
     }
-    /**
-     * [删除某个地址]
-     * @param  [Integer] $id [地址ID]
-     * @return [Integer]     [影响的行数]
-     */
     public static function remove($userId, $id)
     {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['id', '=', $id],
-                            ['user_id', '=', $userId],
-                        ])
-                        ->delete();
-    }
-    /**
-     * [更新地址信息]
-     * @param  [Integer] $id      [地址ID]
-     * @param  [Array] $addrArr [要更新的地址信息]
-     * @return [Integer]          [影响的行数]
-     */
-    public static  function modify($addrArr)
-    {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['id', '=', $addrArr['id']],
-                            ['user_id', '=', $addrArr['user_id']],
-                        ])
-                        ->update($addrArr);
+        return DbAddress::remove($userId, $id);
     }
     public static function setDefault($userId, $id)
     {
-        app('db')->table(self::$model)
-                 ->where('user_id', $userId)
-                 ->update(['state' => 1]);
-        return  app('db')->table(self::$model)
-                         ->where([
-                            ['id', '=', $id],
-                            ['user_id', '=', $userId],
-                        ])
-                         ->update(['state' => 0]);
+        return DbAddress::setDefault($userId, $id);
     }
     public static function getAddrId($userId,$addrID) {
         if(is_null($addrID)) {
-            $addrDetail = static::get($userId);
+            $addrDetail = DbAddress::get($userId);
         } else {
-            $addrDetail = static::get($userId, $addrID);
+            $addrDetail = DbAddress::get($userId, $addrID);
         }
-        if(empty($addrDetail)) {
+        if(empty($addrDetail) || $addrDetail->state == 2) {
             return null;
         } else {
             return $addrDetail->id;
         }
+    }
+    public static function modify($userId, $addrId, $arr)
+    {
+        $uarr['where'] = [
+            ['user_id', '=', $userId],
+            ['id', '=', $addrId],
+        ];
+        $uarr['update'] = $arr;
+        return DbAddress::modify($uarr);
     }
 }
 

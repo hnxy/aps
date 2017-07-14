@@ -28,7 +28,6 @@
         return $str;
     }
 
-
     /**
      * [genToken description]
      * 生成token,以后升级将会引入JWT,目前先使用普通的token
@@ -52,6 +51,19 @@
         $token = $request->input('token');
         return  $authorization ? $authorization : $token;
     }
+    function getCombinePayId($userId, $payId) {
+        $str = time();
+        $str .= $payId;
+        if(strlen($userId) < 4) {
+            $str .= sprintf('%04d', $userId);
+        } else {
+            $str .= substr($userId, -4);
+        }
+        for($i = 0; $i < 4; $i++) {
+            $str .= mt_rand(0,9);
+        }
+        return $str;
+    }
     /**
      * [自定义的curl操作]
      * @param  [String] $url    [请求的URL地址]
@@ -60,7 +72,7 @@
      */
     function myCurl($url, $method = 'GET') {
         $ch = curl_init();
-        if (strtolower($method) == 'POST') {
+        if (strtolower($method) == 'post') {
             curl_setopt($ch, CURLOPT_POST, true);
         }
         curl_setopt($ch,CURLOPT_URL,$url);
@@ -126,6 +138,9 @@
      */
     function formatM($timestamp) {
         return date('n月d日', $timestamp);
+    }
+    function formatY($timestamp) {
+        return date('Y年n月d日', $timestamp);
     }
     /**
      * [formatD description]

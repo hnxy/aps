@@ -2,23 +2,19 @@
 
 namespace App\Models;
 
-class GoodsClasses
+use App\Models\Db\GoodsClasses as DbClasses;
+
+class GoodsClasses extends Model
 {
-    private static $model = 'goods_classes';
+    public static $model = 'GoodsClasses';
 
     public static function mget()
     {
-        return app('db')->table(self::$model)
-                        ->where(['state' => 1])
-                        ->select(['name', 'id'])
-                        ->get();
+        return DbClasses::mget(['where' => ['state' => 1]]);
     }
     public static function get($id)
     {
-        return app('db')->table(self::$model)
-                        ->where(['id' => $id])
-                        ->select(['name', 'id'])
-                        ->first();
+        DbClasses::get(['where' => ['id' => $id] ]);
     }
 }
 ?>

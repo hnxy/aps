@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Models\Db;
+
+class GoodsCar extends Model
+{
+    public static $model = 'goods_car';
+
+    public static function mModify($arr)
+    {
+        return  app('db')->table(self::$model)
+                         ->where(isset($arr['where']) ? $arr['where'] : [])
+                         ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
+                         ->update($arr['update']);
+    }
+
+    public static function modify($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where($arr['where'])
+                        ->update($arr['update']);
+    }
+
+    public static function mget($userId, $goodsCarIDs, $state)
+    {
+        return  app('db')->table(self::$model)
+                         ->where([
+                            ['user_id', '=', $userId],
+                            ['state', '=', $state],
+                         ])
+                         ->whereIn('id', $goodsCarIDs)
+                         ->get();
+    }
+    public static function add($msg)
+    {
+        return app('db')->table(self::$model)
+                        ->insertGetId($msg);
+    }
+    public static function getItems($userId, $limit, $page)
+    {
+        return app('db')->table(self::$model)
+                        ->limit($limit)
+                        ->offset(($page - 1) * $limit)
+                        ->where([
+                            ['user_id', '=', $userId],
+                            ['state', '=', 0]
+                        ])
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+    }
+    public static function remove($userId, $goodsCarId)
+    {
+        return app('db')->table(self::$model)
+                        ->where([
+                            ['user_id', '=', $userId],
+                            ['id', '=', $goodsCarId]
+                        ])
+                        ->update(['state' => 2]);
+    }
+    public static function get($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where($arr['where'])
+                        ->first();
+    }
+    public static function getAllNum($userId)
+    {
+        return app('db')->table(self::$model)
+                        ->where([
+                            ['user_id', '=', $userId],
+                            ['state', '=', 0]
+                        ])
+                        ->count();
+    }
+}

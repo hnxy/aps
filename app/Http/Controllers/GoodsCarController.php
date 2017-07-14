@@ -15,7 +15,7 @@ class GoodsCarController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [包含购物车信息的数组]
      */
-    public function index(Request $request)
+    public function index(Request $request, $user)
     {
         $rules = [
             'limit' => 'integer|min:1|max:100',
@@ -24,7 +24,6 @@ class GoodsCarController extends Controller
         $this->validate($request, $rules);
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
-        $user = $request->user;
         $goodsCars = GoodsCar::getItems($user->id, $limit, $page);
         $rsp = [];
         foreach ($goodsCars as $goodsCarItem) {
@@ -32,8 +31,8 @@ class GoodsCarController extends Controller
             $goodsInfo = Goods::getDetail($goodsCarItem->goods_id);
             if($goodsInfo->end_time <= time() ) {
                 $temp['state'] = 1;
-                $temp['goods_car_id'] = null;
-                $temp['goods_num'] = null;
+                $temp['goods_car_id'] = $goodsCarItem->id;
+                $temp['goods_num'] = $goodsCarItem->goods_num;
                 $goodsInfo->status_text = '该商品已下架';
                 $goodsInfo->send_time = formatM($goodsInfo->send_time);
                 $temp['goods_info'] = $goodsInfo;
@@ -59,21 +58,19 @@ class GoodsCarController extends Controller
      * @param  Request $request [Request实例]
      * @return [integer]           [返回购物车ID]
      */
-    public function store(Request $request)
+    public function store(Request $request, $user)
     {
         $rules = [
         'goods_id' => 'required|integer',
-        'goods_num' => 'required|integer'
+        'goods_num' => 'required|integer|max:999|min:1'
         ];
         $this->validate($request, $rules);
         $goodsId = $request->input('goods_id');
-        $user = $request->user;
         //检查商品是否是未开售或者是已过期的商品
-        if(empty(Goods::get($goodsId))) {
+        if(empty($goodsInfo = Goods::get($goodsId)) || $goodsInfo->status != 0) {
             throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
         }
         $goodsNum = $request->input('goods_num');
-
         $goodsCar = GoodsCar::hasGoods($user->id, $goodsId);
         if(!empty($goodsCar)) {
             GoodsCar::updateGoodsNum($user->id, $goodsCar->id, $goodsNum+$goodsCar->goods_num);
@@ -83,7 +80,7 @@ class GoodsCarController extends Controller
                         'goods_num' => $goodsNum,
                         'user_id' => $user->id,
                         'created_at' => time(),
-            ]);
+                    ]);
         }
         return config('wx.msg');
     }
@@ -92,7 +89,7 @@ class GoodsCarController extends Controller
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function update(Request $request)
+    public function update(Request $request, $user)
     {
         $rules = [
             'goods_num' => 'required|integer|min:1|max:999',
@@ -100,11 +97,8 @@ class GoodsCarController extends Controller
         $this->validate($request, $rules);
         $id = $request->route()[2]['id'];
         $goodsNum = $request->input('goods_num');
-        $user = $request->user;
         //获取购物车对象集合,判断是否存在异常的购物车
         $goodsCars = obj2arr(GoodsCar::mget($user->id, [$id]));
-        // var_dump($goodsCars);
-        // exit;
         if(empty($goodsCars)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
@@ -116,16 +110,16 @@ class GoodsCarController extends Controller
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function delete(Request $request)
+    public function delete(Request $request, $user)
     {
         $goodsCarId = $request->route()[2]['id'];
-        GoodsCar::updateState($request->user->id, (array) $goodsCarId, 2);
+        GoodsCar::remove($user->id, $goodsCarId);
         return config('wx.msg');
     }
-    public function getAll(Request $request)
+    public function getAll(Request $request, $user)
     {
         $rsp = config('wx.msg');
-        $rsp['num'] = GoodsCar::getAllNum($request->user->id);
+        $rsp['num'] = GoodsCar::getAllNum($user->id);
         return $rsp;
     }
 }

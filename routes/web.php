@@ -9,13 +9,12 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         //订单相关
         $app->group(['prefix' => '/order'], function() use ($app) {
             $app->post('/', 'OrderController@store');
-            $app->post('/show', 'OrderController@showPreOrder');
-            $app->group(['prefix' => '/classes/{state}', 'where' => ['state' => '\d'] ], function() use($app){
-                $app->get('/', 'OrderController@getClassesOrder');
-            });
-            $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use($app){
+            $app->get('/preOrder', 'OrderController@showPreOrder');
+            $app->get('/', 'OrderController@getClassesOrder');
+            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use($app){
                 $app->get('/', 'OrderController@show');
-                $app->put('/', 'OrderController@update');
+                $app->put('finish', 'OrderController@finishRecv');
+                $app->put('cancel', 'OrderController@cancel');
                 $app->patch('/', 'OrderController@delete');
             });
         });
@@ -25,7 +24,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
             $app->get('/', 'GoodsCarController@index');
             $app->get('/all', 'GoodsCarController@getAll');
             $app->put('/', 'GoodsCarController@addLogistics');
-            $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
+            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use ($app) {
                 $app->put('/', 'GoodsCarController@update');
                 $app->patch('/', 'GoodsCarController@delete');
             });
@@ -34,14 +33,17 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         $app->group(['prefix' => '/address'], function() use ($app) {
             $app->post('/', 'AddressController@store');
             $app->get('/', 'AddressController@index');
-            $app->group(['prefix' => 'set/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
+            $app->group(['prefix' => 'set/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use ($app) {
                  $app->put('/', 'AddressController@setDefault');
             });
-            $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
+            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use ($app) {
                 $app->get('/', 'AddressController@show');
                 $app->put('/', 'AddressController@update');
-                $app->delete('/', 'AddressController@delete');
+                $app->patch('/', 'AddressController@delete');
             });
+        });
+        $app->group(['prefix' => 'coupon'], function() use ($app) {
+            $app->get('/', 'CouponController@checkCode');
         });
         //物流相关
         $app->group(['prefix' => '/logistics'], function() use ($app) {
@@ -59,8 +61,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
     $app->group(['prefix' => '/coupon'], function() use ($app) {
         $app->post('/', 'CouponController@store');
         $app->get('/', 'CouponController@getCode');
-        $app->post('/check', 'CouponController@checkCode');
-        $app->group(['prefix' => '/{id}', 'where' => ['id' => '\d{1,16}'] ], function() use ($app) {
+        $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function() use ($app) {
             // $app->post('/', 'CouponController@show');
             $app->put('/', 'CouponController@update');
             $app->delete('/', 'CouponController@delete');

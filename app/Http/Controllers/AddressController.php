@@ -15,14 +15,13 @@ class AddressController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [包含购物车信息的数组]
      */
-    public function index(Request $request)
+    public function index(Request $request, $user)
     {
         $rules = [
             'limit' => 'integer|min:1|max:100',
             'page' => 'integer|min:1',
         ];
         $this->validate($request, $rules);
-        $user = $request->user;
         $limit = $request->input('limit', 10);
         $page  = $request->input('page', 1);
         $address = new Address();
@@ -38,7 +37,7 @@ class AddressController extends Controller
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function store(Request $request)
+    public function store(Request $request, $user)
     {
         $rules = [
             'name' => 'required|string',
@@ -49,7 +48,6 @@ class AddressController extends Controller
             'detail' => 'required|string|max:256',
         ];
         $this->validate($request, $rules);
-        $user = $request->user;
         $name = $request->input('name');
         $phone = $request->input('phone');
         $provinceId = $request->input('province');
@@ -63,7 +61,7 @@ class AddressController extends Controller
         } else {
             Address::add([
                 'name' => $name,
-                'tel' => $phone,
+                'phone' => $phone,
                 'province_id' => $provinceId,
                 'city_id' => $cityId,
                 'area_id' => $areaId,
@@ -80,18 +78,18 @@ class AddressController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [包含地址信息的数组]
      */
-    public function show(Request $request)
+    public function show(Request $request, $user)
     {
         $id = $request->route()[2]['id'];
         $address = new Address();
-        return $address->getFullAddr($request->user->id, $id);
+        return $address->getFullAddr($user->id, $id);
     }
     /**
      * [更新地址信息]
      * @param  Request $request [Request实例]
      * @return [Boolean]           [0表示成功1表示失败]
      */
-    public function update(Request $request)
+    public function update(Request $request, $user)
     {
         $rules = [
             'name' => 'required|string',
@@ -103,7 +101,6 @@ class AddressController extends Controller
         ];
         $this->validate($request, $rules);
         $id = $request->route()[2]['id'];
-        $user = $request->user;
         $name = $request->input('name');
         $phone = $request->input('phone');
         $provinceId = $request->input('province');
@@ -115,17 +112,15 @@ class AddressController extends Controller
             $rsp['state'] = 1;
             $rsp['msg'] = '该地址不合法';
         } else {
-            Address::modify([
-                'id' => $id,
-                'name' => $name,
-                'tel' => $phone,
-                'province_id' => $provinceId,
-                'city_id' => $cityId,
-                'area_id' => $areaId,
-                'location' => $detail,
-                'user_id' => $request->user->id,
-                'state' => 1,
-            ]);
+            Address::modify($user->id, $id, [
+                                    'name' => $name,
+                                    'phone' => $phone,
+                                    'province_id' => $provinceId,
+                                    'city_id' => $cityId,
+                                    'area_id' => $areaId,
+                                    'location' => $detail,
+                                    'user_id' => $user->id,
+                                ]);
         }
         return $rsp;
     }
@@ -134,22 +129,29 @@ class AddressController extends Controller
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function delete(Request $request)
+    public function delete(Request $request, $user)
     {
         $id = $request->route()[2]['id'];
-        if(Address::remove($request->user->id, $id)) {
-             return config('wx.msg');
+        $rsp = config('wx.msg');
+        if(!Address::remove($user->id, $id)) {
+            $rsp['state'] = 1;
+            $rsp['msg'] = '删除地址信息失败';
         }
+        return $rsp;
     }
     /**
      * [设为默认收货地址]
      * @param Request $request [description]
      */
-    public function setDefault(Request $request)
+    public function setDefault(Request $request, $user)
     {
         $addressId = $request->route()[2]['id'];
-        Address::setDefault($request->user->id, $addressId);
-        return config('wx.msg');
+        $rsp = config('wx.msg');
+        if(!Address::setDefault($user->id, $addressId)) {
+            $rsp['state'] = 1;
+            $rsp['msg'] = '设置默认地址失败';
+        }
+        return $rsp;
     }
 }
 ?>

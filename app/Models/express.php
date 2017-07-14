@@ -2,15 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Db\Express as DbExpress;
 
-class Express
+class Express extends Model
 {
-    private static $model = 'express';
+    public static $model = 'Express';
 
     public static function get($id)
     {
-        return app('db')->table(self::$model)
-                        ->where('id', $id)
-                        ->first();
+        return DbExpress::get(['where' => ['id' => $id] ]);
     }
 }

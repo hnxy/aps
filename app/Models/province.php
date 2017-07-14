@@ -2,17 +2,14 @@
 
 namespace App\Models;
 
-class Province
+use App\Models\Db\Province as DbProvince;
+class Province extends Model
 {
-    private static $model = 'province';
+    public static $model = 'Province';
 
     public static function get($id)
     {
-        return app('db')->table(self::$model)
-                        ->where([
-                            ['province_id', '=', $id],
-                        ])
-                        ->first();
+        return DbProvince::get(['where' => ['province_id' => $id] ]);
     }
 }
 

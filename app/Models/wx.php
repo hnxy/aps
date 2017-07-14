@@ -4,13 +4,15 @@ namespace App\Models;
 
 use App\Exceptions\ApiException;
 
-class Wx
+class Wx extends Model
 {
     /**
      * [获取用户信息]
      * @param  [String] $code [用户授权的code]
      * @return [array]       [一个包含用户信息的数组]
      */
+    public static $model = 'Wx';
+
     public function getUserInfo($code)
     {
         $res = $this->getWebAccessToken($code);
