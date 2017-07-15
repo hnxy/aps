@@ -20,7 +20,8 @@ class GetAuth
     public function handle($request, Closure $next, $guard = null)
     {
         $id = (int) $request->input('search');
-        if($request->agent->level !== 1 && $request->agent->id !== $id) {
+        $agent = $request->route()[2]['agent_id'];
+        if($agent->level !== 1 && $agent->id !== $id) {
             throw new ApiException("你没有此权限", 3, 401);
         }
         return $next($request);

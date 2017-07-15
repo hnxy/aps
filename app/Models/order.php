@@ -16,7 +16,7 @@ class Order extends Model
      * @param  [Array] $orderMsg [订单的信息]
      * @return [Integer]           [返回订单的ID]
      */
-    public static function create($orderMsg)
+    public function create($orderMsg)
     {
         return DbOrder::create($orderMsg);
     }
@@ -25,7 +25,7 @@ class Order extends Model
      * @param  [integer] $id [订单ID]
      * @return [Object]     [包含订单信息的对象]
      */
-    public static function get($userId, $id)
+    public function get($userId, $id)
     {
         return DbOrder::get(['where' => [
                 ['user_id', '=', $userId],
@@ -46,19 +46,16 @@ class Order extends Model
         $sendTime = 99999999999;
         $timespace = 999;
         $goodsCarMap = getMap($goodsCars, 'goods_id');
-        $goodses = Goods::mgetByIds(array_keys($goodsCarMap));
+        $goodsModel = new Goods();
+        $goodses = $goodsModel->mgetByIds(array_keys($goodsCarMap));
         foreach ($goodses as $goodsInfo) {
             $goodsCar = $goodsCarMap[$goodsInfo->id];
             $currentPrice = sprintf('%.2f', $goodsInfo->price*$goodsCar->goods_num);
             $allPrice += $currentPrice;
-            $goodsCarInfos[] = [
-                'goods_car_id' => $goodsCar->id,
-                'goods_id' => $goodsInfo->id,
-                'name' => $goodsInfo->title,
-                'value' => '￥'.$currentPrice,
-                'num' => $goodsCar->goods_num,
-                'unit' => $goodsInfo->unit,
-            ];
+            $goodsCarInfo = $this->formatGoods($goodsCar, $goodsInfo);
+            $goodsCarInfo['value'] = '￥'.$currentPrice;
+            $goodsCarInfo['goods_car_id'] = $goodsCar->id;
+            $goodsCarInfos[] = $goodsCarInfo;
             $sendTime = min($sendTime, $goodsInfo->send_time);
             $timespace = min($timespace, $goodsInfo->timespace);
         }
@@ -79,11 +76,11 @@ class Order extends Model
      * @param  [integer] $id [订单ID]
      * @return [integer]     [返回影响的行数]
      */
-    public static function remove($userId, $id)
+    public function remove($userId, $id)
     {
         return DbOrder::remove($userId, $id);
     }
-    public static function mget($userId, $limit, $page, $state)
+    public function mget($userId, $limit, $page, $state)
     {
         $arr['limit'] = $limit;
         $arr['page'] = $page;
@@ -107,15 +104,17 @@ class Order extends Model
         $time = time();
         //获取商品id,同时获取商品与订单之间的映射
         $orderMap = getMap($orders, 'goods_id');
-        $goodses = Goods::mgetByIds(array_keys($orderMap));
+        $goodsModel = new Goods();
+        $goodses = $goodsModel->mgetByIds(array_keys($orderMap));
         foreach ($goodses as $goods) {
             $allPrice = 0;
             $order = $orderMap[$goods->id];
             $allPrice += sprintf('%.2f', $goods->price*$order->goods_num);
             $orderInfo = $this->formatOrder($order);
             $goodsInfo = $this->formatGoods($order, $goods);
+
             $express = $this->getExpress($order->express_id);
-            $allPrice = $this->getAllPrice($order->coupon_id, $allPrice);
+            $allPrice = $this->getAllPriceByCouponId($order->coupon_id, $allPrice);
             $goodsInfo['value'] = '￥'.$allPrice;
             $sendPrice = sprintf('%.2f', $order->send_price);
             $sendTime = formatTime($goods->send_time);
@@ -132,10 +131,10 @@ class Order extends Model
         }
         return $orderInfos;
     }
-    protected function getAllPrice($couponId, $allPrice)
+    protected function getAllPriceByCouponId($couponId, $allPrice)
     {
         if(!is_null($couponId)) {
-            $coupon = Coupon::getById($couponId);
+            $coupon = (new Coupon())->getById($couponId);
             $allPrice -= $coupon->price;
         }
         return sprintf('%.2f', $allPrice);
@@ -198,23 +197,13 @@ class Order extends Model
     {
         $express = null;
         if(!is_null($expressId)) {
-            $express = Express::get($expressId);
+            $express = (new Express())->get($expressId);
             $express->phone = config("wx.express_offic_phone.{$express->code}");
         }
         return $express;
     }
-    public function getOrderInfo($order)
+    protected function getPay($order)
     {
-        $priceInfos = $pay_info = [];
-        $goodsInfo = Goods::get($order->goods_id);
-        $allPrice = sprintf('%.2f', $goodsInfo->price*$order->goods_num);
-        $sendTime = formatY($goodsInfo->send_time);
-        $express = null;
-        if(!is_null($order->express_id)) {
-            $express = Express::get($order->express_id);
-            $express->phone = config("wx.express_offic_phone.{$express->code}");
-        }
-        //支付相关
         $payTime = null;
         if(!is_null($order->pay_time))
             $payTime = formatTime($order->pay_time);
@@ -222,17 +211,22 @@ class Order extends Model
         $pay_info[] = ['name' => '订单号:', 'value' => $order->id];
         $pay_info[] = ['name' => '支付方式:', 'value' => config('wx.pay_by')[$order->pay_by]];
         $pay_info[] = ['name' => '支付时间:', 'value' => $payTime];
+    }
+    public function getOrderInfo($order)
+    {
+        $priceInfos = $pay_info = [];
+        $goodsModel = new Goods();
+        $goodsInfo = $goodsModel->get($order->goods_id);
+        $allPrice = $this->getAllPriceByCouponId(null, $goodsInfo->price*$order->goods_num);
+        $sendTime = formatY($goodsInfo->send_time);
+        $express = $this->getExpress($order->express_id);
+        //支付相关
+        $payInfo = $this->getPay($order);
         //价格相关
         $priceInfos[] = ['name' => '订单总价', 'value' => '￥'.$allPrice];
         $priceInfos[] = ['name' => '配送费', 'value' => '￥00.00'];
         // $priceInfos[] = ['name' => '优惠券', 'value' => '-￥00.00'];
-        $goods_car_infos[] =  [
-                'goods_id' => $goodsInfo->id,
-                'name' => $goodsInfo->title,
-                'value' => '￥'.$allPrice,
-                'num' => $order->goods_num,
-                'unit' => $goodsInfo->unit,
-        ];
+        $goods_car_infos = $this->formatGoods($order, $goodsInfo);
         return [
             'send_time' => ["预计{$sendTime}发货", "预计{$goodsInfo->timespace}天后到货"],
             'pay_info' => $pay_info,
@@ -240,7 +234,7 @@ class Order extends Model
             'goods_car_info' => $goods_car_infos,
         ];
     }
-    public static function modify($orderId, $userId, $arr)
+    public function modify($orderId, $userId, $arr)
     {
         $uarr['where'] = [
             ['id', '=', $orderId],
@@ -249,14 +243,14 @@ class Order extends Model
         $uarr['update'] = $arr;
         return DbOrder::modify($uarr);
     }
-    public static function mModify($orderIds, $arr)
+    public function mModify($orderIds, $arr)
     {
         $uarr['whereIn']['key'] = 'id';
         $uarr['whereIn']['values'] = $orderIds;
         $uarr['update'] = $arr;
         return DbOrder::mModify($uarr);
     }
-    public static function mModifyByUser($orderIds, $userId, $arr)
+    public function mModifyByUser($orderIds, $userId, $arr)
     {
         $uarr['where'] = ['user_id' => $userId];
         $uarr['whereIn']['key'] = 'id';
@@ -264,7 +258,7 @@ class Order extends Model
         $uarr['update'] = $arr;
         return DbOrder::mModify($uarr);
     }
-    public static function getByAgentId($agentId, $id)
+    public function getByAgentId($agentId, $id)
     {
         return DbOrder::getByAgentId($agentId, $id);
     }
@@ -277,7 +271,7 @@ class Order extends Model
      * @param  [type] $page    [description]
      * @return [type]          [description]
      */
-    public static function getByTime($agentId, $start, $end, $limit, $page)
+    public function getByTime($agentId, $start, $end, $limit, $page)
     {
         return DbOrder::getByTime($agentId, $start, $end, $limit, $page);
     }
@@ -286,20 +280,20 @@ class Order extends Model
      * @param [type] $orderIds [description]
      * @param [type] $orderArr [description]
      */
-    public static function addLogistics($orderIds, $orderArr)
+    public function addLogistics($orderIds, $orderArr)
     {
         $uarr['whereIn']['key'] = 'id';
         $uarr['whereIn']['values'] = $orderIds;
         $uarr['update'] = $orderArr;
         return DbOrder::mModify($uarr);
     }
-    public static function updateByLogstics($logstics, $arr)
+    public function updateByLogstics($logstics, $arr)
     {
         $uarr['where'] = ['logistics_code' => $logstics];
         $uarr['update'] = $arr;
         return DbOrder::modify($uarr);
     }
-    public static function mgetByOrderIds($userId, $orderIds)
+    public function mgetByOrderIds($userId, $orderIds)
     {
         return DbOrder::mgetByOrderIds($userId, $orderIds);
     }

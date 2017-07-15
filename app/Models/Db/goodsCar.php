@@ -21,7 +21,7 @@ class GoodsCar extends Model
                         ->update($arr['update']);
     }
 
-    public static function mget($userId, $goodsCarIDs, $state)
+    public static function mgetByGoodsCarIds($userId, $goodsCarIDs, $state)
     {
         return  app('db')->table(self::$model)
                          ->where([
@@ -36,15 +36,14 @@ class GoodsCar extends Model
         return app('db')->table(self::$model)
                         ->insertGetId($msg);
     }
-    public static function getItems($userId, $limit, $page)
+    public static function mget($arr)
     {
+        $limit = isset($arr['limit']) ? $arr['limit'] : 10;
+        $page = isset($arr['page']) ? $arr['page'] : 1;
         return app('db')->table(self::$model)
                         ->limit($limit)
                         ->offset(($page - 1) * $limit)
-                        ->where([
-                            ['user_id', '=', $userId],
-                            ['state', '=', 0]
-                        ])
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
                         ->orderBy('created_at', 'desc')
                         ->get();
     }

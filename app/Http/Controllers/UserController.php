@@ -3,14 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use app\Models\User;
-use app\Models\Wx;
+use App\Models\User;
+use App\Models\Wx;
 use App\Exceptions\ApiException;
 
 class UserController extends Controller
 {
-
-
 
     /**
      * @param  Request [注入Request实例]
@@ -113,6 +111,11 @@ class UserController extends Controller
             'uid' => $userInfo->id
         ];
         return redirect($callback.'?'.http_build_query($params));
+    }
+    public function test($myid, $username)
+    {
+        var_dump($myid);
+        // var_dump($username);
     }
 }
 ?>

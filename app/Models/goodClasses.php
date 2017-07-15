@@ -8,11 +8,11 @@ class GoodsClasses extends Model
 {
     public static $model = 'GoodsClasses';
 
-    public static function mget()
+    public function mget()
     {
         return DbClasses::mget(['where' => ['state' => 1]]);
     }
-    public static function get($id)
+    public function get($id)
     {
         DbClasses::get(['where' => ['id' => $id] ]);
     }

@@ -27,9 +27,12 @@ class GoodsController extends Controller
             'classes_id' => 'integer',
             'unit' => 'required|string',
             'send_time' => 'required|date',
+            'time_space' => 'required|integer',
             'stock' => 'required|integer',
+            'classes_id' => 'integer',
         ];
         $this->validate($request, $rules);
+        $goodsModel = new Goods();
         $goodsInfo = $request->all();
         if(!array_key_exists('classes_id', $goodsInfo)) {
             $goodsInfo['classes_id'] = 0;
@@ -38,7 +41,7 @@ class GoodsController extends Controller
         $goodsInfo['end_time'] = strtotime($goodsInfo['end_time']);
         $goodsInfo['send_time'] = strtotime($goodsInfo['send_time']);
         $goodsInfo['created_at'] = time();
-        if(Goods::add($goodsInfo)) {
+        if($goodsModel->add($goodsInfo)) {
             return config('wx.msg');
         }
     }

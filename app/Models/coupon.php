@@ -13,21 +13,35 @@ class Coupon extends Model
      * @param  [type] $agentId [description]
      * @return [type]          [description]
      */
-    public static function get($goodsId, $agentId)
+    public function get($goodsId, $agentId)
     {
         return DbCoupon::get(['where' => [
                             ['goods_id', '=', $goodsId],
                             ['agent_id', '=', $agentId],
                         ]]);
     }
-    public static function mget($agentId, $limit, $page)
+    public function getItems($agentId, $limit, $page)
     {
         $arr['where'] = ['agent_id' => $agentId];
         $arr['limit'] = $limit;
         $arr['page'] = $page;
-        return DbCoupon::mget($arr);
+        $coupons = DbCoupon::mget($arr);
+        foreach ($coupons as &$coupon) {
+            if($coupon->expired < time()) {
+                $coupon->status = 1;
+                $coupon->status_text = '该优惠券已过期';
+            } else {
+                $coupon->status = 0;
+                $coupon->status_text = null;
+            }
+            $coupon->created_at = formatTime($coupon->created_at);
+            $coupon->start_time = formatTime($coupon->start_time);
+            $coupon->expired = formatTime($coupon->expired);
+        }
+        unset($coupon);
+        return obj2arr($coupons);
     }
-    public static function add($arr)
+    public function add($arr)
     {
         return DbCoupon::add($arr);
     }
@@ -70,11 +84,11 @@ class Coupon extends Model
         return [];
     }
 
-    public static function modifyById($id)
+    public function modifyById($id)
     {
         return DbCoupon::modifyById($id);
     }
-    public static function has($goodsId)
+    public function has($goodsId)
     {
         $coupon = DbCoupon::get(['where' => ['goods_id' => $goodsId] ]);
         if(!empty($coupon)) {
@@ -82,19 +96,33 @@ class Coupon extends Model
         }
         return false;
     }
-    public static function modifyByGoodsId($goodsId, $arr)
+    public function modifyByGoodsId($goodsId, $arr)
     {
         $uarr['where'] = ['goods_id' => $goodsId];
         $uarr['update'] = $arr;
         return DbCoupon::modify($uarr);
     }
-    public static function remove($id)
+    public function remove($id)
     {
         return DbCoupon::remove($id);
     }
-    public static function getById($id)
+    public function getById($id)
     {
         return DbCoupon::get(['where' => ['id' => $id] ]);
+    }
+    public function couponValidate($goodsCars)
+    {
+        $allPrice = 0;
+        $goodsModel = new Goods();
+        $goods = getMap($goodsCars, 'goods_id');
+        if($coupon = $this->checkWork($code, 'code', array_keys($goods))) {
+            $allPrice = (-1)*$coupon['price'];
+            foreach ($goodsModel->mgetByIds(array_keys($goods)) as $goodsInfo) {
+                $allPrice += $goodsInfo->price*$goods[$goodsInfo->id]->goods_num;
+            }
+            $coupon['all_price'] = sprintf('%0.2f', $allPrice);
+        }
+        return $coupon;
     }
 }
 

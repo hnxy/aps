@@ -57,7 +57,7 @@ class User extends Model
         );
         return ['id' => $user->id, 'token' => $token];
     }
-    public static function loginBy3($userInfo3)
+    public function loginBy3($userInfo3)
     {
         $user = DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
         if (empty($user)) {

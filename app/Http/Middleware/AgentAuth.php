@@ -20,8 +20,7 @@ class AgentAuth
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        $agentId = $request->route()[2]['agent_id'];
-        $agent = Agent::get($agentId);
+        $agent = $request->route()[2]['agent_id'];
         $token = getToken($request);
         $time = time();
         if (empty($agent)) {
@@ -33,7 +32,6 @@ class AgentAuth
         if ($agent->token_expired < $time) {
             return response("登录已经过期", 401);
         }
-        $request->agent = $agent;
         return $next($request);
     }
 }

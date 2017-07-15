@@ -28,7 +28,8 @@ class UserController extends Controller
         $this->validate($request, $rules);
         $AgentArr = $request->except('confirm');
         $AgentArr['passwd'] = password_hash($AgentArr['passwd'], PASSWORD_DEFAULT);
-        if(Agent::add($AgentArr)) {
+        $agentModel = new Agent();
+        if($agentModel->add($AgentArr)) {
             return config('wx.msg');
         }
     }
@@ -40,8 +41,6 @@ class UserController extends Controller
         ];
         $this->validate($request, $rules);
         $lastIp = getIp();
-        // var_dump($lastIp);
-        // exit;
         $userAgent = $request->header('User-Agent');
         $agentArr = [
             'username' => $request->username,

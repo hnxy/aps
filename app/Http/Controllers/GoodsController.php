@@ -126,7 +126,6 @@ class GoodsController extends Controller
         $goodsInfo->start_time_text = formatTime($goodsInfo->start_time);
         $goodsInfo->end_time_text = formatTime($goodsInfo->end_time);
         $goodsInfo->leave_end_time_text  = formatD($goodsInfo->end_time);
-        // $goodsDetail['all']  = GoodsCar::getAllNum($request->user->id);
         $goodsDetail['detail'] = $goodsInfo;
         $goodsDetail['goods_imgs'] = array_map(function($img) {
             return $img['goods_img'];

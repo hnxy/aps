@@ -10,7 +10,7 @@ use App\Models\Db\Address as DbAddress;
 class Address extends Model
 {
     public static $model = 'Address';
-    public static function get($userId, $addrId = null)
+    public function get($userId, $addrId = null)
     {
         return DbAddress::get($userId, $addrId);
     }
@@ -31,9 +31,9 @@ class Address extends Model
             $rsp['msg'] =  ['请填写你的收获地址'];
         } else {
             // 根据获取的地址的详细信息来获取省,市,县区的名称
-            $provinceName = Province::get($addrDetail->province_id)->name;
-            $cityName = City::get($addrDetail->city_id)->name;
-            $areaName = Area::get($addrDetail->area_id)->area_name;
+            $provinceName = (new Province())->get($addrDetail->province_id)->name;
+            $cityName = (new City())->get($addrDetail->city_id)->name;
+            $areaName = (new Area())->get($addrDetail->area_id)->area_name;
             $fullAddr = $provinceName.$cityName.$areaName.$addrDetail->location;
             $addrDetail->provinceName = $provinceName;
             $addrDetail->cityName = $cityName;
@@ -49,7 +49,7 @@ class Address extends Model
      * [新增地址信息]
      * @param [Array] $addrArr [地址信息数组]
      */
-    public static function add($addrArr)
+    public function add($addrArr)
     {
         return DbAddress::add($addrArr);
     }
@@ -59,19 +59,19 @@ class Address extends Model
      * @param  [Integer] $page  [页数]
      * @return [Object]        [地址信息对象集合]
      */
-    public static function mget($userId, $limit, $page)
+    public function mget($userId, $limit, $page)
     {
         return DbAddress::mget($userId, $limit, $page);
     }
-    public static function remove($userId, $id)
+    public function remove($userId, $id)
     {
         return DbAddress::remove($userId, $id);
     }
-    public static function setDefault($userId, $id)
+    public function setDefault($userId, $id)
     {
         return DbAddress::setDefault($userId, $id);
     }
-    public static function getAddrId($userId,$addrID) {
+    public function getAddrId($userId,$addrID) {
         if(is_null($addrID)) {
             $addrDetail = DbAddress::get($userId);
         } else {
@@ -83,7 +83,7 @@ class Address extends Model
             return $addrDetail->id;
         }
     }
-    public static function modify($userId, $addrId, $arr)
+    public function modify($userId, $addrId, $arr)
     {
         $uarr['where'] = [
             ['user_id', '=', $userId],

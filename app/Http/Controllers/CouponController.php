@@ -19,7 +19,8 @@ class CouponController extends Controller
         $goodsId = $request->input('goods_id');
         $agentId = $request->input('agent_id');
         $rsp = config('wx.msg');
-        $coupon = Coupon::get($goodsId, $agentId);
+        $couponModel = new Coupon();
+        $coupon = $couponModel->get($goodsId, $agentId);
         if(empty($coupon) || $coupon->expired < time() ) {
             $rsp['state'] = 1;
             $rsp['msg'] = '无法兑换该优惠码';
@@ -40,18 +41,13 @@ class CouponController extends Controller
         $code = $request->input('code');
         $goodsCarIds = explode(',', $request->input('goods_car_ids'));
         array_pop($goodsCarIds);
-        $goodsCars = GoodsCar::mget($user->id, $goodsCarIds);
+        $goodsCarModel = new GoodsCar();
+        $couponModel = new Coupon();
+        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
         if(count(obj2arr($goodsCars)) != count($goodsCarIds)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
-        $goods = getMap($goodsCars, 'goods_id');
-        $couponModel = new Coupon();
-        if($coupon = $couponModel->checkWork($code, 'code', array_keys($goods))) {
-            $allPrice = (-1)*$coupon['price'];
-            foreach (Goods::mgetByIds(array_keys($goods)) as $goodsInfo) {
-                $allPrice += $goodsInfo->price*$goods[$goodsInfo->id]->goods_num;
-            }
-            $coupon['all_price'] = sprintf('%0.2f', $allPrice);
+        if($coupon = $couponModel->couponValidate($goodsCars)) {
             $rsp['state'] = 0;
             $rsp['msg'] = $coupon;
         } else {

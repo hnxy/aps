@@ -24,34 +24,8 @@ class GoodsCarController extends Controller
         $this->validate($request, $rules);
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
-        $goodsCars = GoodsCar::getItems($user->id, $limit, $page);
-        $rsp = [];
-        foreach ($goodsCars as $goodsCarItem) {
-            //购物车包含过期商品
-            $goodsInfo = Goods::getDetail($goodsCarItem->goods_id);
-            if($goodsInfo->end_time <= time() ) {
-                $temp['state'] = 1;
-                $temp['goods_car_id'] = $goodsCarItem->id;
-                $temp['goods_num'] = $goodsCarItem->goods_num;
-                $goodsInfo->status_text = '该商品已下架';
-                $goodsInfo->send_time = formatM($goodsInfo->send_time);
-                $temp['goods_info'] = $goodsInfo;
-            } else {
-                $temp['state'] = 0;
-                $temp['goods_car_id'] = $goodsCarItem->id;
-                $temp['goods_num'] = $goodsCarItem->goods_num;
-                $goodsClasses = GoodsClasses::get($goodsInfo->classes_id);
-                if(empty($goodsClasses)) {
-                    $goodsInfo->status_text = null;
-                } else {
-                    $goodsInfo->status_text = $goodsClasses->name;
-                }
-                $goodsInfo->send_time = formatM($goodsInfo->send_time);
-                $temp['goods_info'] = $goodsInfo;
-            }
-            $rsp[] = $temp;
-        }
-        return $rsp;
+        $goodsCarModel = new GoodsCar();
+        return $goodsCarModel->getItems($user->id, $limit, $page);
     }
     /**
      * [存贮购物车信息]
@@ -66,16 +40,18 @@ class GoodsCarController extends Controller
         ];
         $this->validate($request, $rules);
         $goodsId = $request->input('goods_id');
+        $goodsModel = new Goods();
+        $goodsCarModel = new GoodsCar();
         //检查商品是否是未开售或者是已过期的商品
-        if(empty($goodsInfo = Goods::get($goodsId)) || $goodsInfo->status != 0) {
+        if(empty($goodsInfo = $goodsModel->get($goodsId)) || $goodsInfo->status != 0) {
             throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
         }
         $goodsNum = $request->input('goods_num');
-        $goodsCar = GoodsCar::hasGoods($user->id, $goodsId);
+        $goodsCar = $goodsCarModel->hasGoods($user->id, $goodsId);
         if(!empty($goodsCar)) {
-            GoodsCar::updateGoodsNum($user->id, $goodsCar->id, $goodsNum+$goodsCar->goods_num);
+            $goodsCarModel->updateGoodsNum($user->id, $goodsCar->id, $goodsNum+$goodsCar->goods_num);
         } else {
-            GoodsCar::add([
+            $goodsCarModel->add([
                         'goods_id' => $goodsId,
                         'goods_num' => $goodsNum,
                         'user_id' => $user->id,
@@ -97,12 +73,13 @@ class GoodsCarController extends Controller
         $this->validate($request, $rules);
         $id = $request->route()[2]['id'];
         $goodsNum = $request->input('goods_num');
+        $goodsCarModel = new GoodsCar();
         //获取购物车对象集合,判断是否存在异常的购物车
-        $goodsCars = obj2arr(GoodsCar::mget($user->id, [$id]));
+        $goodsCars = obj2arr($goodsCarModel->mgetByGoodsCarIds($user->id, [$id]));
         if(empty($goodsCars)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
-        GoodsCar::updateGoodsNum($user->id, $id, $goodsNum);
+        $goodsCarModel->updateGoodsNum($user->id, $id, $goodsNum);
         return config('wx.msg');
     }
     /**
@@ -113,13 +90,13 @@ class GoodsCarController extends Controller
     public function delete(Request $request, $user)
     {
         $goodsCarId = $request->route()[2]['id'];
-        GoodsCar::remove($user->id, $goodsCarId);
+        (new GoodsCar())->remove($user->id, $goodsCarId);
         return config('wx.msg');
     }
     public function getAll(Request $request, $user)
     {
         $rsp = config('wx.msg');
-        $rsp['num'] = GoodsCar::getAllNum($user->id);
+        $rsp['num'] = (new GoodsCar())->getAllNum($user->id);
         return $rsp;
     }
 }

@@ -13,7 +13,7 @@ class GoodsCar extends Model
      * @param  integer $state       [状态码]
      * @return [type]               [description]
      */
-    public static function updateState($userId, $goodsCarIDs, $state = 0)
+    public function updateState($userId, $goodsCarIDs, $state = 0)
     {
         $arr['where'] = ['user_id' => $userId];
         $arr['whereIn']['key'] = 'id';
@@ -27,7 +27,7 @@ class GoodsCar extends Model
      * @param  [Integer] $goodsNum   [商品数量]
      * @return [Integer]             [返回影响的行数]
      */
-    public static function updateGoodsNum($userId, $goodsCarId, $goodsNum)
+    public function updateGoodsNum($userId, $goodsCarId, $goodsNum)
     {
         $arr['where'] = [
             ['user_id', '=', $userId],
@@ -42,16 +42,16 @@ class GoodsCar extends Model
      * @param  [Integer] $goodsCarIDs [购物车状态码]
      * @return [Array]              [购物车信息集合]
      */
-    public static function mget($userId, $goodsCarIDs, $state = 0)
+    public function mgetByGoodsCarIds($userId, $goodsCarIDs, $state = 0)
     {
-        return  DbGoodsCar::mget($userId, $goodsCarIDs, $state);
+        return  DbGoodsCar::mgetByGoodsCarIds($userId, $goodsCarIDs, $state);
     }
     /**
      * [添加购物车信息]
      * @param [Array] $msg [购物车信息数组]
      * @return [Integer] [返回影响的行数]
      */
-    public static function add($msg)
+    public function add($msg)
     {
         return DbGoodsCar::add($msg);
     }
@@ -61,16 +61,52 @@ class GoodsCar extends Model
      * @param  [Integer] $page  [页数]
      * @return [Object]        [购物车信息的对象]
      */
-    public static function getItems($userId, $limit, $page)
+    public function getItems($userId, $limit, $page)
     {
-        return DbGoodsCar::getItems($userId, $limit, $page);
+
+        $arr['limit'] = $limit;
+        $arr['page'] = $page;
+        $arr['where'] = [
+            ['user_id', '=', $userId],
+            ['state', '=', 0],
+        ];
+        $goodsCars = DbGoodsCar::mget($arr);
+        $goodsModel = new Goods();
+        $goodsClassesModel = new GoodsClasses();
+        $rsp = [];
+        foreach ($goodsCars as $GoodsCar) {
+            //购物车包含过期商品
+            $goodsInfo = $goodsModel->getDetail($GoodsCar->goods_id);
+            if($goodsInfo->end_time <= time() ) {
+                $temp['state'] = 1;
+                $temp['goods_car_id'] = $GoodsCar->id;
+                $temp['goods_num'] = $GoodsCar->goods_num;
+                $goodsInfo->status_text = '该商品已下架';
+                $goodsInfo->send_time = formatM($goodsInfo->send_time);
+                $temp['goods_info'] = $goodsInfo;
+            } else {
+                $temp['state'] = 0;
+                $temp['goods_car_id'] = $GoodsCar->id;
+                $temp['goods_num'] = $GoodsCar->goods_num;
+                $goodsClasses = $goodsClassesModel->get($goodsInfo->classes_id);
+                if(empty($goodsClasses)) {
+                    $goodsInfo->status_text = null;
+                } else {
+                    $goodsInfo->status_text = $goodsClasses->name;
+                }
+                $goodsInfo->send_time = formatM($goodsInfo->send_time);
+                $temp['goods_info'] = $goodsInfo;
+            }
+            $rsp[] = $temp;
+        }
+        return $rsp;
     }
     /**
      * [删除购物车]
      * @param  [Integer] $goodsCarId [购物车ID]
      * @return [Integer]             [影响的行数]
      */
-    public static function remove($userId, $goodsCarId)
+    public function remove($userId, $goodsCarId)
     {
         return DbGoodsCar::remove($userId, $goodsCarId);
     }
@@ -80,7 +116,7 @@ class GoodsCar extends Model
      * @param  [type]  $id     [description]
      * @return boolean         [description]
      */
-    public static function hasGoods($userId, $id)
+    public function hasGoods($userId, $id)
     {
         return DbGoodsCar::get(['where' => [
                 ['goods_id', '=', $id],
@@ -88,14 +124,14 @@ class GoodsCar extends Model
                 ['state', '=', 0],
             ]]);
     }
-    public static function get($userId, $id)
+    public function get($userId, $id)
     {
         return DbGoodsCar::get(['where' => [
                 ['user_id', '=', $userId],
                 ['id', '=', $id],
             ]]);
     }
-    public static function getAllNum($userId)
+    public function getAllNum($userId)
     {
         return DbGoodsCar::getAllNum($userId);
     }

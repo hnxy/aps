@@ -12,7 +12,7 @@ class Goods extends Model
      * @param  [Integer] $id [商品ID]
      * @return [Object]     [商品信息对象]
      */
-    public static function get($id)
+    public function get($id)
     {
         $time = time();
         $goodsInfo = DbGoods::get(['where' =>
@@ -36,7 +36,7 @@ class Goods extends Model
      * @param  integer $page  [分页参数]
      * @return [Object]           [返回一个包含商品条目对象]
      */
-    public static function mget($limit, $page)
+    public function mget($limit, $page)
     {
         return DbGoods::mget($limit, $page);
     }
@@ -46,17 +46,17 @@ class Goods extends Model
      * @param  [Integer] $id [商品的ID]
      * @return [Object]           [返回一个包含商品详细信息对象]
      */
-    public static function getDetail($id)
+    public function getDetail($id)
     {
         return DbGoods::get(['where' =>
             ['id' => $id],
           ]);
     }
-    public static function add($goodsArr)
+    public function add($goodsArr)
     {
         return DbGoods::add($goodsArr);
     }
-    public  function isAbnormal($goodsCars)
+    public function isAbnormal($goodsCars)
     {
         $goods = [];
         foreach ($goodsCars as $goodsCar) {
@@ -81,10 +81,10 @@ class Goods extends Model
         return false;
     }
 
-    public static function modifyStock($goods, $type = 'increment') {
+    public function modifyStock($goods, $type = 'increment') {
         DbGoods::modifyStock($goods, $type);
     }
-    public static function mgetByIds($goodsIds)
+    public function mgetByIds($goodsIds)
     {
         return DbGoods::mgetByIds($goodsIds);
     }

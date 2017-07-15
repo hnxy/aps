@@ -18,7 +18,8 @@ class AddAuth
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        if($request->agent->level !== 1) {
+        $agent = $request->route()[2]['agent_id'];
+        if($agent->level !== 1) {
             throw new ApiException("你没有此权限", 3, 401);
         }
         return $next($request);

@@ -1,6 +1,7 @@
 <?php
 
 $app->get('/ping', 'PingController@ping');
+$app->get('user/{id}/{username}', 'UserController@test');
 $app->get('check', 'UserController@check');
 $app->group(['prefix' => '/v1'], function () use ($app) {
     $app->post('/login', 'UserController@login');
@@ -54,21 +55,39 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
 
     $app->get('login3', 'UserController@login3');
     $app->get('login3_callback', 'UserController@login3Callback');
-    $app->group(['prefix' => '/goods'], function () use ($app) {
-        $app->get('/', 'GoodsController@index');
-        $app->get('/{id}', 'GoodsController@show');
-    });
-    $app->group(['prefix' => '/coupon'], function() use ($app) {
-        $app->post('/', 'CouponController@store');
-        $app->get('/', 'CouponController@getCode');
-        $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function() use ($app) {
-            // $app->post('/', 'CouponController@show');
-            $app->put('/', 'CouponController@update');
-            $app->delete('/', 'CouponController@delete');
+
+    //后台相关
+    $app->group(['prefix' => '/admin', 'namespace' => 'Admin'], function() use ($app) {
+        $app->group(['prefix' => '/agent/{agent_id}', 'where' => ['agent_id' => '[0-9]{1,11}'], 'middleware' => ['agent_auth'] ], function () use ($app) {
+            $app->group(['middleware' => ['add_auth'] ], function () use ($app) {
+                $app->post('/goods', 'GoodsController@store');
+                $app->group(['prefix' => '/order'], function() use ($app) {
+                    $app->put('/logistics', 'OrderController@addLogistics');
+                });
+            });
+            $app->group(['middleware' => ['get_auth'] ], function () use ($app) {
+                $app->group(['prefix' => '/order'], function() use ($app) {
+                    $app->get('/', 'OrderController@index');
+                    $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function () use ($app) {
+
+                    });
+                });
+                $app->group(['prefix' => '/coupon'], function() use ($app) {
+                    $app->get('/', 'CouponController@index');
+                });
+            });
+            $app->group(['prefix' => '/coupon'], function() use ($app) {
+                $app->post('/', 'CouponController@store');
+                $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function() use ($app) {
+                    $app->delete('/', 'CouponController@delete');
+                });
+            });
+        });
+        $app->group(['prefix' => '/agent'], function () use ($app) {
+            $app->post('/', 'UserController@store');
+            $app->post('/login', 'UserController@login');
         });
     });
-
-    $app->group(['prefix' => '/admin'], function() use ($app) {
-        $app->post('/agent', 'AdminController@addAgent');
-    });
 });
+
+

@@ -7,12 +7,14 @@ use App\Models\Db\Agent as DbAgent;
 class Agent extends Model
 {
     public static $model = 'Agent';
-    public static function get($agentId)
+
+    public function get($id)
     {
-        return DbAgent::get(['where' => ['id' => $agentId] ]);
+        $this->primaryValue = $id;
+        return $this;
     }
 
-    public static function add($arr)
+    public function add($arr)
     {
         return DbAgent::add($arr);
     }
@@ -47,9 +49,9 @@ class Agent extends Model
         DbAgent::update($arr);
         return ['id' => $user->id, 'token' => $token]   ;
     }
-    public static function has($agentId)
+    public function has($agentId)
     {
-        if(empty($agent = static::get($agentId))) {
+        if(empty($agent = $this->get($agentId))) {
             return false;
         }
         return true;

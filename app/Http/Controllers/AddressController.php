@@ -54,12 +54,14 @@ class AddressController extends Controller
         $cityId = $request->input('city');
         $areaId = $request->input('area');
         $detail = $request->input('detail');
+        $areaModel = new Area();
+        $addressModel = new Address();
         $rsp = config('wx.msg');
-        if(!Area::checkAddrWork($provinceId, $cityId, $areaId)) {
+        if(!$areaModel->checkAddrWork($provinceId, $cityId, $areaId)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '该地址不合法';
         } else {
-            Address::add([
+            $addressModel->add([
                 'name' => $name,
                 'phone' => $phone,
                 'province_id' => $provinceId,
@@ -81,8 +83,8 @@ class AddressController extends Controller
     public function show(Request $request, $user)
     {
         $id = $request->route()[2]['id'];
-        $address = new Address();
-        return $address->getFullAddr($user->id, $id);
+        $addressModel = new Address();
+        return $addressModel->getFullAddr($user->id, $id);
     }
     /**
      * [更新地址信息]
@@ -108,11 +110,13 @@ class AddressController extends Controller
         $areaId = $request->input('area');
         $detail = $request->input('detail');
         $rsp = config('wx.msg');
-        if(!Area::checkAddrWork($provinceId, $cityId, $areaId)) {
+        $areaModel = new Area();
+        $addressModel = new Address();
+        if(!$areaModel->checkAddrWork($provinceId, $cityId, $areaId)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '该地址不合法';
         } else {
-            Address::modify($user->id, $id, [
+            $addressModel->modify($user->id, $id, [
                                     'name' => $name,
                                     'phone' => $phone,
                                     'province_id' => $provinceId,
@@ -133,7 +137,7 @@ class AddressController extends Controller
     {
         $id = $request->route()[2]['id'];
         $rsp = config('wx.msg');
-        if(!Address::remove($user->id, $id)) {
+        if((new Address())->remove($user->id, $id)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '删除地址信息失败';
         }
@@ -147,7 +151,7 @@ class AddressController extends Controller
     {
         $addressId = $request->route()[2]['id'];
         $rsp = config('wx.msg');
-        if(!Address::setDefault($user->id, $addressId)) {
+        if((new Address())->setDefault($user->id, $addressId)) {
             $rsp['state'] = 1;
             $rsp['msg'] = '设置默认地址失败';
         }

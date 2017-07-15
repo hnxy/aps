@@ -68,6 +68,9 @@ $app->singleton(
 
 $app->routeMiddleware([
     'my_auth' => \App\Http\Middleware\MyAuth::class,
+    'agent_auth' => \App\Http\Middleware\AgentAuth::class,
+    'add_auth' => \App\Http\Middleware\AddAuth::class,
+    'get_auth' => \App\Http\Middleware\GetAuth::class,
 ]);
 
 /*

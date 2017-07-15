@@ -7,7 +7,7 @@ class Province extends Model
 {
     public static $model = 'Province';
 
-    public static function get($id)
+    public function get($id)
     {
         return DbProvince::get(['where' => ['province_id' => $id] ]);
     }

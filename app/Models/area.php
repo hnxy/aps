@@ -8,11 +8,11 @@ class Area extends Model
 {
     public static $model = 'Area';
 
-    public static function get($id)
+    public function get($id)
     {
         return DbArea::get(['where' => ['area_id' => $id ]]);
     }
-    public static function checkAddrWork($provinceId, $cityId, $areaId)
+    public function checkAddrWork($provinceId, $cityId, $areaId)
     {
         $res = DbArea::get(['where' => [
                             ['province_id', '=', $provinceId],

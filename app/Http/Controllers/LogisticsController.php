@@ -15,15 +15,18 @@ class LogisticsController extends Controller
     public function getOrderTraces(Request $request, $user)
     {
         $orderId = $request->route()[2]['id'];
-        $orderInfo = Order::get($user->id, $orderId);
+        $orderModel = new Order();
+        $goodsModel = new Goods();
+        $expressModel = new Express();
+        $orderInfo = $orderModel->get($user->id, $orderId);
         if(empty($orderInfo)) {
             throw new ApiException(config('error.order_empty_err.msg'), config('error.order_empty_err.code'));
         }
         if($orderInfo->order_status != 3 && $orderInfo->order_status != 4) {
             throw new ApiException('该订单还没有物流', config('error.no_traces_exception.code'));
         }
-        $goods = Goods::getDetail($orderInfo->goods_id);
-        $express = Express::get($orderInfo->express_id);
+        $goods = $goodsModel->getDetail($orderInfo->goods_id);
+        $express = $expressModel->get($orderInfo->express_id);
         $expressCode = $express->code;
         $logisticsCode = $orderInfo->logistics_code;
         $requestData = <<<Data
@@ -44,15 +47,6 @@ Data;
         if($expressInfo['Success'] !== true || array_key_exists('Reason', $expressInfo)) {
             throw new ApiException($expressInfo['Reason'], config('error.logistics_request_err.code'));
         }
-        $expressInfo['phone'] = config("wx.express_offic_phone.{$express->code}");
-        return [
-            'express_info' => $expressInfo,
-            'order_info' => [
-                'id' => $orderInfo->id,
-                'order_num' => $orderInfo->order_num,
-                'created_at' => date('Y年-n月-d日 H:i:s', $orderInfo->created_at),
-                'img' => $goods->goods_img,
-            ],
-        ];
+        return $expressModel->getExpress($orderInfo, $express, $goods);
     }
 }
