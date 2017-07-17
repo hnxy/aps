@@ -10,7 +10,7 @@ class GoodsClasses extends Model
 
     public function mget()
     {
-        return DbClasses::mget(['where' => ['state' => 1]]);
+        return DbClasses::mget(['where' => ['status' => 1]]);
     }
     public function get($id)
     {

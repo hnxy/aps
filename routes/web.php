@@ -1,7 +1,6 @@
 <?php
 
 $app->get('/ping', 'PingController@ping');
-$app->get('user/{id}/{username}', 'UserController@test');
 $app->get('check', 'UserController@check');
 $app->group(['prefix' => '/v1'], function () use ($app) {
     $app->post('/login', 'UserController@login');
@@ -10,7 +9,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         //订单相关
         $app->group(['prefix' => '/order'], function() use ($app) {
             $app->post('/', 'OrderController@store');
-            $app->get('/preOrder', 'OrderController@showPreOrder');
+            $app->get('/preOrder', 'OrderController@preOrder');
             $app->get('/', 'OrderController@getClassesOrder');
             $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use($app){
                 $app->get('/', 'OrderController@show');
@@ -52,7 +51,12 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         });
 
     });
-
+    $app->group(['prefix' => '/goods'], function() use ($app) {
+        $app->get('/', 'GoodsController@index');
+        $app->group(['prefix' => '/{goods_id}', 'where' => ['goods_id' => '[0-9]{1,11}']], function () use ($app) {
+            $app->get('/', 'GoodsController@show');
+        });
+    });
     $app->get('login3', 'UserController@login3');
     $app->get('login3_callback', 'UserController@login3Callback');
 
@@ -69,7 +73,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
                 $app->group(['prefix' => '/order'], function() use ($app) {
                     $app->get('/', 'OrderController@index');
                     $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function () use ($app) {
-
+                        $app->get('/', 'OrderController@show');
                     });
                 });
                 $app->group(['prefix' => '/coupon'], function() use ($app) {

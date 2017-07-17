@@ -19,31 +19,33 @@ class Address extends Model
      * @param  [Integer] $addrID [地址ID]
      * @return [Array]         [完整地址信息的数组]
      */
-    public function getFullAddr($userId, $addrId) {
-        $rsp = config('wx.msg');
+    public function getFullAddr($addrDetail) {
+        $rsp = config('response.success');
+        // 根据获取的地址的详细信息来获取省,市,县区的名称
+        $provinceName = (new Province())->get($addrDetail->province_id)->name;
+        $cityName = (new City())->get($addrDetail->city_id)->name;
+        $areaName = (new Area())->get($addrDetail->area_id)->area_name;
+        $fullAddr = $provinceName.$cityName.$areaName.$addrDetail->location;
+        $addrDetail->provinceName = $provinceName;
+        $addrDetail->cityName = $cityName;
+        $addrDetail->areaName = $areaName;
+        $addrDetail->status = $addrDetail->is_default ? true : false;
+        $addrDetail->fullAddr = $fullAddr;
+        $rsp['code'] = 0;
+        $rsp['msg'] = $addrDetail;
+        return $rsp;
+    }
+    public function isExist($userId, $addrId)
+    {
         if(empty($addrId)) {
             $addrDetail = $this->get($userId);
         } else {
             $addrDetail = $this->get($userId, $addrId);
         }
-        if(empty($addrDetail) || $addrDetail->state == 2) {
-            $rsp['state'] = 1;
-            $rsp['msg'] =  ['请填写你的收获地址'];
-        } else {
-            // 根据获取的地址的详细信息来获取省,市,县区的名称
-            $provinceName = (new Province())->get($addrDetail->province_id)->name;
-            $cityName = (new City())->get($addrDetail->city_id)->name;
-            $areaName = (new Area())->get($addrDetail->area_id)->area_name;
-            $fullAddr = $provinceName.$cityName.$areaName.$addrDetail->location;
-            $addrDetail->provinceName = $provinceName;
-            $addrDetail->cityName = $cityName;
-            $addrDetail->areaName = $areaName;
-            $addrDetail->state = !$addrDetail->state ? true : false;
-            $addrDetail->fullAddr = $fullAddr;
-            $rsp['state'] = 0;
-            $rsp['msg'] = $addrDetail;
+        if(empty($addrDetail) || $addrDetail->is_del == 1) {
+            return false;
         }
-        return $rsp;
+        return $addrDetail;
     }
     /**
      * [新增地址信息]
@@ -70,18 +72,6 @@ class Address extends Model
     public function setDefault($userId, $id)
     {
         return DbAddress::setDefault($userId, $id);
-    }
-    public function getAddrId($userId,$addrID) {
-        if(is_null($addrID)) {
-            $addrDetail = DbAddress::get($userId);
-        } else {
-            $addrDetail = DbAddress::get($userId, $addrID);
-        }
-        if(empty($addrDetail) || $addrDetail->state == 2) {
-            return null;
-        } else {
-            return $addrDetail->id;
-        }
     }
     public function modify($userId, $addrId, $arr)
     {

@@ -112,10 +112,10 @@ class UserController extends Controller
         ];
         return redirect($callback.'?'.http_build_query($params));
     }
-    public function test($myid, $username)
+    public function test($myid, $myusername)
     {
         var_dump($myid);
-        // var_dump($username);
+        var_dump($myusername);
     }
 }
 ?>

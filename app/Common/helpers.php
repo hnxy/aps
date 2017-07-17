@@ -51,19 +51,7 @@
         $token = $request->input('token');
         return  $authorization ? $authorization : $token;
     }
-    function getCombinePayId($userId, $payId) {
-        $str = time();
-        $str .= $payId;
-        if(strlen($userId) < 4) {
-            $str .= sprintf('%04d', $userId);
-        } else {
-            $str .= substr($userId, -4);
-        }
-        for($i = 0; $i < 4; $i++) {
-            $str .= mt_rand(0,9);
-        }
-        return $str;
-    }
+
     /**
      * [自定义的curl操作]
      * @param  [String] $url    [请求的URL地址]
@@ -152,18 +140,6 @@
         $D =  intval($diff/86400);
         $H = intval($diff%86400/3600);
         return $D.'天'.$H.'小时';
-    }
-    /**
-     * [getGoodsCarIds description]
-     * @param  [type] $orderGoodsObj [description]
-     * @return [type]                [description]
-     */
-    function getGoodsCarIds($orderGoodsObj) {
-        $goodsCars = [];
-        foreach ($orderGoodsObj as $orderGoods) {
-            $goodsCars[] = $orderGoods->goods_car_id;
-        }
-        return $goodsCars;
     }
         /**
      *  post提交数据

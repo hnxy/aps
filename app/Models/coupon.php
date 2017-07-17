@@ -68,12 +68,12 @@ class Coupon extends Model
      * @param  [String] $key   [字段名]
      * @return [Object]        [包含该优惠券ID信息的对象]
      */
-    public  function checkWork($value, $key, $goods_ids) {
+    public  function checkWork($value, $key, $goodsIds) {
         if(is_null($value)) {
             return [];
         }
         $result = $this->validate($value, $key);
-        if(!empty($result) && in_array($result->goods_id, $goods_ids)) {
+        if(!empty($result) && in_array($result->goods_id, $goodsIds)) {
             DbCoupon::modifyById($result->id);
             return [
                 'id' => $result->id,
@@ -110,7 +110,7 @@ class Coupon extends Model
     {
         return DbCoupon::get(['where' => ['id' => $id] ]);
     }
-    public function couponValidate($goodsCars)
+    public function couponValidate($goodsCars, $code)
     {
         $allPrice = 0;
         $goodsModel = new Goods();

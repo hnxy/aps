@@ -22,7 +22,7 @@ class OrderController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [返回包含临时订单的信息]
      */
-    public function showPreOrder(Request $request, $user)
+    public function preOrder(Request $request, $user)
     {
         $rules = [
             'addr_id' => 'integer',
@@ -31,17 +31,18 @@ class OrderController extends Controller
         $this->validate($request, $rules);
         $goodsCarIDs = explode(',', $request->input('goods_car_ids'));
         array_pop($goodsCarIDs);
-        $addrID = $request->input('addr_id', null);
+        $addrId = $request->input('addr_id', null);
         $orderModel = new Order();
         $addressModel = new Address();
         $goodsCarModel = new GoodsCar();
         // 获取购物车的信息,该返回的数据为对象数组
         $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIDs);
-        if(count(obj2arr($goodsCars)) != count($goodsCarIDs)) {
-            throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
+        $this->checkGoodsCarWork($goodsCars, $goodsCarIDs);
+        if ( ($addrDetail = $this->hasAddr($user->id, $addrId)) === false) {
+            return config('response.addr_not_exist');
         }
         return [
-            'rcv_info' => $addressModel->getFullAddr($user->id, $addrID),
+            'rcv_info' => $addressModel->getFullAddr($addrDetail),
             'orders_info' => $orderModel->getPrice($goodsCars, null, 'code'),
         ];
     }
@@ -50,24 +51,23 @@ class OrderController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [返回订单有关的信息]
      */
-    public function show(Request $request, $user)
+    public function show(Request $request, $user, $orderId)
     {
-        $orderID = $request->route()[2]['id'];
         $addressModel = new Address();
         $orderModel = new Order();
-        $order = $orderModel->get($user->id, $orderID);
-        $rsp = config('wx.msg');
-        if(empty($order)) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该订单不存在';
-            return $rsp;
+        $order = $orderModel->get($user->id, $orderId);
+        $rsp = config('response.success');
+        if(!$orderModel->isExist($order)) {
+            return config('response.order_not_exist');
         }
-        //判断收货地址是否存在
-        $addrID = $order->addr_id;
+        if ( ($addrDetail = $this->hasAddr($user->id, $order->addr_id)) === false) {
+            return config('response.addr_not_exist');
+        }
         $rsp = $orderModel->getOrderInfo($order);
-        $rsp['addr_info'] = $addressModel->getFullAddr($user->id, $addrID);
+        $rsp['addr_info'] = $addressModel->getFullAddr($addrDetail);
         return $rsp;
     }
+
     /**
      * [创建订单]
      * @param  Request $request [Request实例]
@@ -85,61 +85,36 @@ class OrderController extends Controller
         $goodsCarIDs = explode(',', $request->input('goods_car_ids'));
         array_pop($goodsCarIDs);
         $payId = $request->input('pay_id');
-        $addrID = $request->input('addr_id', null);
+        $addrId = $request->input('addr_id', null);
         $couponID = $request->input('coupon_id', null);
         $agentID = $request->input('agent_id', null);
-        $rsp = config('wx.msg');
+        $rsp = config('response.success');
         $orderModel = new Order();
         $addressModel = new Address();
         $goodsModel = new Goods();
-        $couponModel = new Coupon();
         $goodsCarModel = new GoodsCar();
-        $agentModel = new Agent();
-        // 获取地址的id
-        $addrId = $addressModel->getAddrId($user->id, $addrID);
-        // 没有填写收货地址或者收货地址的ID不对
-        if(is_null($addrId)) {
+        if (($addr = $this->hasAddr($user->id, $addrId)) === false) {
             return config('error.addr_null_err');
         }
-
+        // 获取购物车的信息,该返回的数据为对象数组
+        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIDs);
+        $this->checkGoodsCarWork($goodsCars, $goodsCarIDs);
+        $this->checkOrderArgs($goodsCars, $couponID, $agentID);
         try {
             app('db')->beginTransaction();
-             // 获取购物车的信息,该返回的数据为对象数组
-            $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIDs);
-            if(count(obj2arr($goodsCars)) != count($goodsCarIDs)) {
-                throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
-            }
-            //检查优惠码是否有效
-            $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
-            if(!$coupon->checkWork($couponID, 'id', $goodsIds)) {
-                throw new ApiException('无效的优惠码信息', config('error.not_work_coupon_exception.code'));
-            }
-            //检查代理是否存在
-            if(!is_null($agentID) && !$agentModel->has($agentID)) {
-                throw new ApiException('无效的代理者', config('error.not_work_agent_exception.code'));
-            }
-            //判断购物车是否有过期商品或商品库存是否足够
-            if(($abnormal = $goods->isAbnormal($goodsCars)) !== false) {
-                throw new ApiException($abnormal['msg'], $abnormal['code']);
-            }
             // 更新购物车的状态
-            if(!$agentModel->updateState($user->id, $goodsCarIDs, 1)) {
-                throw new ApiException("购物车更新失败", config('error.update_goods_car_err.code'));
-            }
+            $goodsCarModel->updateStatus($user->id, $goodsCarIDs, 1);
             //更新商品的库存
             $goodsModel->modifyStock(array_column(obj2arr($goodsCars), 'goods_num', 'goods_id'), 'decrement');
-            /**
-             * 创建订单
-             */
+            //创建订单
             $time = time();
-            $orderNums = [];
+            $combinePayId = Order::getCombinePayId($user->id, $payId);
             foreach ($goodsCars as $goodsCar) {
-                $orderNum = getRandomString(16);
-                $combinePayId = getCombinePayId($user->id, $payId);
+                $orderNum = $this->getOrderNum(16);
                 $orderDatas[] = [
                     'order_num' => $orderNum,
                     'pay_id' => $payId,
-                    'addr_id' => $addrId,
+                    'addr_id' => $addr->id,
                     'send_time' => mktime(0, 0, 0, date('m'), date('d')+1, date('Y')),
                     'time_space' => 3,
                     'send_price' => 0,
@@ -149,7 +124,6 @@ class OrderController extends Controller
                     'order_status' => 1,
                     'user_id' => $user->id,
                     'created_at' => $time,
-                    'order_expired' => $time + config('wx.order_work_time')*3600,
                     'goods_id' => $goodsCar->goods_id,
                     'goods_num' => $goodsCar->goods_num,
                     'combine_pay_id' => $combinePayId,
@@ -163,6 +137,64 @@ class OrderController extends Controller
         //创建订单完成,跳转到支付
         return  $rsp;
     }
+    /**
+     * [判断地址是否存在]
+     * @param  [type]  $userId [description]
+     * @param  [type]  $addrId [description]
+     * @return boolean         [description]
+     */
+    protected function hasAddr($userId, $addrId)
+    {
+       return (new Address())->isExist($userId, $addrId);
+    }
+    /**
+     * [生成订单号]
+     * @param  [type] $len [description]
+     * @return [type]      [description]
+     */
+    private function getOrderNum($len)
+    {
+        return getRandomString($len);
+    }
+    /**
+     * [检查订单参数是否合法]
+     * @param  [type] $goodsCars [description]
+     * @param  [type] $couponID  [description]
+     * @param  [type] $agentID   [description]
+     * @return [type]            [description]
+     */
+    private function checkOrderArgs($goodsCars, $couponID, $agentID)
+    {
+        $couponModel = new Coupon();
+        $agentModel = new Agent();
+        $goodsModel = new Goods();
+        //检查优惠码是否有效
+        $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
+        if(!is_null($couponID) && !$couponModel->checkWork($couponID, 'id', $goodsIds)) {
+            throw new ApiException('无效的优惠码信息', config('error.not_work_coupon_exception.code'));
+        }
+        //检查代理是否存在
+        if(!is_null($agentID) && !$agentModel->has($agentID)) {
+            throw new ApiException('无效的代理者', config('error.not_work_agent_exception.code'));
+        }
+        //判断购物车是否有过期商品或商品库存是否足够
+        if(($abnormal = $goodsModel->isAbnormal($goodsCars)) !== false) {
+            throw new ApiException($abnormal['msg'], $abnormal['code']);
+        }
+    }
+    private function checkGoodsCarWork($goodsCars, $goodsCarIds)
+    {
+        if(count(obj2arr($goodsCars)) != count($goodsCarIds)) {
+            throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
+        }
+        return true;
+    }
+    /**
+     * [合并支付]
+     * @param  Request $request [description]
+     * @param  [type]  $user    [description]
+     * @return [type]           [description]
+     */
     public function combinePay(Request $request, $user)
     {
         $rules = [
@@ -178,17 +210,19 @@ class OrderController extends Controller
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function delete(Request $request, $user)
+    public function delete(Request $request, $user, $orderId)
     {
-        $rsp = config('wx.msg');
-        if(!(new Order())->remove($user->id, $request->route()[2]['id'])) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '删除订单失败';
+        $rsp = config('response.success');
+        $orderModel = new Order();
+        $order = $orderModel->get($user->id, $orderId);
+        if (!$orderModel->canDelete($order)) {
+            return config('response.order_rm_fail');
         }
+        $orderModel->remove($user->id, $orderId);
         return $rsp;
     }
     /**
-     * [getClassesOrder description]
+     * [获取分类订单]
      * @param  Request $request [description]
      * @return [type]           [description]
      */
@@ -200,24 +234,25 @@ class OrderController extends Controller
             'status' => 'integer|max:4|min:0'
         ];
         $this->validate($request, $rules);
-        $rsp = config('wx.addr');
+        $rsp = config('response.items');
         $status = $request->input('status', 0);
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
         $orderModel = new Order();
         $orders = $orderModel->mget($user->id, $limit, $page, $status);
         if(empty(obj2arr($orders))) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '您还没有此类型的订单哦';
+            $rsp['status'] = 0;
+            $rsp['items'] = [];
+            $rsp['num'] = 0;
         } else {
-            $rsp['state'] = 0;
+            $rsp['status'] = 0;
             $rsp['items'] = $orderModel->getOrdersInfo($orders);
             $rsp['num'] = count($rsp['items']);
         }
         return $rsp;
     }
     /**
-     * [waitSend description]
+     * [更新订单状态为等待发货]
      * @param  Request $request [description]
      * @return [type]           [description]
      */
@@ -226,66 +261,51 @@ class OrderController extends Controller
         if(is_array($orderIds)) {
             (new Order())->mModifyByUser($orderIds, $userId, ['order_status' => 2, 'pay_status' => 2,'pay_time' => time()]);
         } else {
-            (new Order())->modify($orderIds, $userId, ['order_status' => 2, 'pay_status' => 2, 'pay_time' => time()]);
+            (new Order())->modifyByUser($orderIds, $userId, ['order_status' => 2, 'pay_status' => 2, 'pay_time' => time()]);
         }
     }
     /**
-     * [finishRecv description]
+     * [完成收货]
      * @param  Request $request [description]
      * @return [type]           [description]
      */
-    public function finishRecv(Request $request, $user)
+    public function finishRecv(Request $request, $user, $orderId)
     {
-        $rsp = config('wx.msg');
-        $id = $request->route()[2]['id'];
+        $rsp = config('response.success');
         $orderModel = new Order();
         //获取订单
-        $order = $orderModel->get($user->id, $id);
-        if(empty($order))  {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该订单不存在,确认收货失败';
-        } else if(is_null($order->logistics_code)) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该订单不存在物流';
-        } else if($order->order_status != 3) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该订单无法完成收货';
-        } else {
-            //根据该该订单的物流单号更新所有有关该物流的订单
-            $orderModel->updateByLogstics($order->logistics_code, ['order_status' => 4]);
+        $order = $orderModel->get($user->id, $orderId);
+        if (!$orderModel->canFinish($order)) {
+            return config('response.order_cannot_finish');
         }
+        //根据该该订单的物流单号更新所有有关该物流的订单
+        $orderModel->updateByLogstics($order->logistics_code, ['order_status' => 4]);
         return $rsp;
     }
     /**
-     * [cancleOrder description]
+     * [取消订单]
      * @param  Request $request [description]
      * @return [type]           [description]
      */
-    public function cancel(Request $request, $user)
+    public function cancel(Request $request, $user, $orderId)
     {
-        $id = $request->route()[2]['id'];
         $orderModel = new Order();
         $goodsModel = new Goods();
-        $orderInfo = $orderModel->get($user->id, $id);
-        $rsp = config('wx.msg');
-        if(empty($orderInfo))  {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该订单不存在';
-        } else if(!in_array($orderInfo->order_status, [1 , 4])) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该订单不能取消';
-        } else {
-            try {
+        $order = $orderModel->get($user->id, $orderId);
+        $rsp = config('response.success');
+        if (!$orderModel->canPay($order)) {
+            return config('response.order_no_cancel');
+        }
+        try {
                 app('db')->beginTransaction();
                 //更新库存
-                $goodsModel->modifyStock([$orderInfo->goods_id => $orderInfo->goods_num]);
+                $goodsModel->modifyStock([$order->goods_id => $order->goods_num]);
                 //更新订单状态
-                $orderModel->modify($id, $user->id, ['order_status' => 5]);
+                $orderModel->modifyByUser($orderId, $user->id, ['order_status' => 5]);
                 app('db')->commit();
             } catch(Exceptions $e) {
                 app('db')->rollBack();
             }
-        }
         return $rsp;
     }
 }

@@ -66,9 +66,8 @@ class GoodsController extends Controller
      * @param  Request $request [注入Request实例]
      * @return [JsonObject]           [返回一个包含商品详细信息和商品轮播的json对象]
      */
-    public function show(Request $request)
+    public function show(Request $request, $id)
     {
-        $id = (int) $request->route()[2]['id'];
         $goods = new Goods();
         $goodsImgs = new GoodsImg();
         $goodsClasses = new GoodsClasses();

@@ -63,7 +63,7 @@ class Goods extends Model
             $goods[$goodsCar->goods_id] = $goodsCar->goods_num;
         }
         $time = time();
-        $goodsInfos = DbGoods::mgetByIds($goods);
+        $goodsInfos = DbGoods::mgetByIds(array_keys($goods));
         foreach ($goodsInfos as $goodsInfo) {
             if($time < $goodsInfo->start_time || $time >= $goodsInfo->end_time) {
                 return [

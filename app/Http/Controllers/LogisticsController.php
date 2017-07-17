@@ -11,10 +11,15 @@ use App\Models\Express;
 
 class LogisticsController extends Controller
 {
-
-    public function getOrderTraces(Request $request, $user)
+    /**
+     * [获取物流信息]
+     * @param  Request $request [description]
+     * @param  [type]  $user    [description]
+     * @param  [type]  $orderId [description]
+     * @return [type]           [description]
+     */
+    public function getOrderTraces(Request $request, $user, $orderId)
     {
-        $orderId = $request->route()[2]['id'];
         $orderModel = new Order();
         $goodsModel = new Goods();
         $expressModel = new Express();
@@ -23,7 +28,7 @@ class LogisticsController extends Controller
             throw new ApiException(config('error.order_empty_err.msg'), config('error.order_empty_err.code'));
         }
         if($orderInfo->order_status != 3 && $orderInfo->order_status != 4) {
-            throw new ApiException('该订单还没有物流', config('error.no_traces_exception.code'));
+            throw new ApiException(config('error.no_traces_exception.msg'), config('error.no_traces_exception.code'));
         }
         $goods = $goodsModel->getDetail($orderInfo->goods_id);
         $express = $expressModel->get($orderInfo->express_id);

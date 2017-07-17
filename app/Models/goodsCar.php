@@ -10,15 +10,15 @@ class GoodsCar extends Model
     /**
      * [更新购物车状态]
      * @param  [Array]  $goodsCarIDs [购物车ID集合]
-     * @param  integer $state       [状态码]
+     * @param  integer $status       [状态码]
      * @return [type]               [description]
      */
-    public function updateState($userId, $goodsCarIDs, $state = 0)
+    public function updateStatus($userId, $goodsCarIDs, $status = 0)
     {
         $arr['where'] = ['user_id' => $userId];
         $arr['whereIn']['key'] = 'id';
         $arr['whereIn']['values'] = $goodsCarIDs;
-        $arr['update'] = ['state' => $state];
+        $arr['update'] = ['status' => $status];
         return  DbGoodsCar::mModify($arr);
     }
     /**
@@ -36,15 +36,35 @@ class GoodsCar extends Model
         $arr['update'] = ['goods_num' => $goodsNum];
         return DbGoodsCar::modify($arr);
     }
+    public function canDelete($goodsCar)
+    {
+        if(!$this->isExist($goodsCar)) {
+            return false;
+        }
+        if ($goodsCar->status == 0) {
+            return true;
+        }
+        return false;
+    }
+    public function canUpdate($goodsCar)
+    {
+        if(!$this->isExist($goodsCar)) {
+            return false;
+        }
+        if ($goodsCar->status == 0) {
+            return true;
+        }
+        return false;
+    }
     /**
      * [通过购物车ID获取购物车信息集合]
      * @param  [Array] $goodsCarIDs [购物车ID集合]
      * @param  [Integer] $goodsCarIDs [购物车状态码]
      * @return [Array]              [购物车信息集合]
      */
-    public function mgetByGoodsCarIds($userId, $goodsCarIDs, $state = 0)
+    public function mgetByGoodsCarIds($userId, $goodsCarIDs, $status = 0)
     {
-        return  DbGoodsCar::mgetByGoodsCarIds($userId, $goodsCarIDs, $state);
+        return  DbGoodsCar::mgetByGoodsCarIds($userId, $goodsCarIDs, $status);
     }
     /**
      * [添加购物车信息]
@@ -63,43 +83,57 @@ class GoodsCar extends Model
      */
     public function getItems($userId, $limit, $page)
     {
-
         $arr['limit'] = $limit;
         $arr['page'] = $page;
         $arr['where'] = [
             ['user_id', '=', $userId],
-            ['state', '=', 0],
+            ['status', '=', 0],
+            ['is_del', '=', 0],
         ];
         $goodsCars = DbGoodsCar::mget($arr);
         $goodsModel = new Goods();
         $goodsClassesModel = new GoodsClasses();
+        $goodsIds = [];
+        foreach ($goodsCars as $goodsCar) {
+            $goodsIds[] = $goodsCar->goods_id;
+        }
+        $goodses = $goodsModel->mgetByIds($goodsIds);
+        $goodsMap = getMap($goodses, 'id');
         $rsp = [];
-        foreach ($goodsCars as $GoodsCar) {
-            //购物车包含过期商品
-            $goodsInfo = $goodsModel->getDetail($GoodsCar->goods_id);
-            if($goodsInfo->end_time <= time() ) {
-                $temp['state'] = 1;
-                $temp['goods_car_id'] = $GoodsCar->id;
-                $temp['goods_num'] = $GoodsCar->goods_num;
-                $goodsInfo->status_text = '该商品已下架';
-                $goodsInfo->send_time = formatM($goodsInfo->send_time);
-                $temp['goods_info'] = $goodsInfo;
-            } else {
-                $temp['state'] = 0;
-                $temp['goods_car_id'] = $GoodsCar->id;
-                $temp['goods_num'] = $GoodsCar->goods_num;
-                $goodsClasses = $goodsClassesModel->get($goodsInfo->classes_id);
-                if(empty($goodsClasses)) {
-                    $goodsInfo->status_text = null;
-                } else {
-                    $goodsInfo->status_text = $goodsClasses->name;
-                }
-                $goodsInfo->send_time = formatM($goodsInfo->send_time);
-                $temp['goods_info'] = $goodsInfo;
-            }
-            $rsp[] = $temp;
+        foreach ($goodsCars as $goodsCar) {
+            $goods = $goodsMap[$goodsCar->goods_id];
+            $rsp[] = $this->formatGoodsCar($goodsCar, $goods);
         }
         return $rsp;
+    }
+    public function isExist($goodsCar)
+    {
+        return (empty($goodsCar) || $goodsCar->is_del ==1 ) ? false : true;
+    }
+    private function formatGoodsCar($goodsCar, $goods)
+    {
+        $goodsClassesModel = new GoodsClasses();
+        if($goods->end_time <= time() ) {
+            $temp['status'] = 1;
+            $temp['goods_car_id'] = $goodsCar->id;
+            $temp['goods_num'] = $goodsCar->goods_num;
+            $goods->status_text = '该商品已下架';
+            $goods->send_time = formatM($goods->send_time);
+            $temp['goods_info'] = $goods;
+        } else {
+            $temp['status'] = 0;
+            $temp['goods_car_id'] = $goodsCar->id;
+            $temp['goods_num'] = $goodsCar->goods_num;
+            $goodsClasses = $goodsClassesModel->get($goods->classes_id);
+            if(empty($goodsClasses)) {
+                $goods->status_text = null;
+            } else {
+                $goods->status_text = $goodsClasses->name;
+            }
+            $goods->send_time = formatM($goods->send_time);
+            $temp['goods_info'] = $goods;
+        }
+        return $temp;
     }
     /**
      * [删除购物车]
@@ -116,13 +150,17 @@ class GoodsCar extends Model
      * @param  [type]  $id     [description]
      * @return boolean         [description]
      */
-    public function hasGoods($userId, $id)
+    public function hasGoods($userId, $goodsId)
     {
-        return DbGoodsCar::get(['where' => [
-                ['goods_id', '=', $id],
+        $goodsCar = DbGoodsCar::get(['where' => [
                 ['user_id', '=', $userId],
-                ['state', '=', 0],
+                ['goods_id', '=', $goodsId],
+                ['status', '=', 0],
             ]]);
+        if (empty($goodsCar) || $goodsCar->is_del == 1) {
+            return false;
+        }
+        return $goodsCar;
     }
     public function get($userId, $id)
     {

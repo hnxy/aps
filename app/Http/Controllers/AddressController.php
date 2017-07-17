@@ -24,11 +24,11 @@ class AddressController extends Controller
         $this->validate($request, $rules);
         $limit = $request->input('limit', 10);
         $page  = $request->input('page', 1);
-        $address = new Address();
-        $addrs = $address->mget($user->id, $limit, $page);
+        $addressModel = new Address();
+        $addrs = $addressModel->mget($user->id, $limit, $page);
         $addrItems = [];
         foreach ($addrs as $addr) {
-            $addrItems[] = $address->getFullAddr($user->id, $addr->id);
+            $addrItems[] = $addressModel->getFullAddr($addr);
         }
         return $addrItems;
     }
@@ -56,10 +56,9 @@ class AddressController extends Controller
         $detail = $request->input('detail');
         $areaModel = new Area();
         $addressModel = new Address();
-        $rsp = config('wx.msg');
+        $rsp = config('response.success');
         if(!$areaModel->checkAddrWork($provinceId, $cityId, $areaId)) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该地址不合法';
+            $rsp = config('response.addr_not_work');
         } else {
             $addressModel->add([
                 'name' => $name,
@@ -68,7 +67,6 @@ class AddressController extends Controller
                 'city_id' => $cityId,
                 'area_id' => $areaId,
                 'location' => $detail,
-                'state' => 1,
                 'user_id' => $user->id,
                 'created_at' => time(),
             ]);
@@ -80,18 +78,20 @@ class AddressController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [包含地址信息的数组]
      */
-    public function show(Request $request, $user)
+    public function show(Request $request, $user, $addressId)
     {
-        $id = $request->route()[2]['id'];
         $addressModel = new Address();
-        return $addressModel->getFullAddr($user->id, $id);
+        if ( ($addrDetail = $addressModel->isExist($user->id, $addressId)) === false) {
+            return config('response.addr_not_exist');
+        }
+        return $addressModel->getFullAddr($addrDetail);
     }
     /**
      * [更新地址信息]
      * @param  Request $request [Request实例]
      * @return [Boolean]           [0表示成功1表示失败]
      */
-    public function update(Request $request, $user)
+    public function update(Request $request, $user, $addressId)
     {
         $rules = [
             'name' => 'required|string',
@@ -102,21 +102,19 @@ class AddressController extends Controller
             'detail' => 'required|string|max:127',
         ];
         $this->validate($request, $rules);
-        $id = $request->route()[2]['id'];
         $name = $request->input('name');
         $phone = $request->input('phone');
         $provinceId = $request->input('province');
         $cityId = $request->input('city');
         $areaId = $request->input('area');
         $detail = $request->input('detail');
-        $rsp = config('wx.msg');
+        $rsp = config('response.success');
         $areaModel = new Area();
         $addressModel = new Address();
         if(!$areaModel->checkAddrWork($provinceId, $cityId, $areaId)) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '该地址不合法';
+            $rsp = config('response.addr_not_work');
         } else {
-            $addressModel->modify($user->id, $id, [
+            $addressModel->modify($user->id, $addressId, [
                                     'name' => $name,
                                     'phone' => $phone,
                                     'province_id' => $provinceId,
@@ -129,32 +127,32 @@ class AddressController extends Controller
         return $rsp;
     }
     /**
-     * [删除商品信息]
+     * [删除地址信息]
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function delete(Request $request, $user)
+    public function delete(Request $request, $user, $addressId)
     {
-        $id = $request->route()[2]['id'];
-        $rsp = config('wx.msg');
-        if((new Address())->remove($user->id, $id)) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '删除地址信息失败';
+        $rsp = config('response.msg');
+        $addressModel = new Address();
+        if ($addressModel->isExist($user->id, $addressId) === false) {
+            return config('response.addr_rm_fail');
         }
+        $addressModel->remove($user->id, $addressId);
         return $rsp;
     }
     /**
      * [设为默认收货地址]
      * @param Request $request [description]
      */
-    public function setDefault(Request $request, $user)
+    public function setDefault(Request $request, $user, $addressId)
     {
-        $addressId = $request->route()[2]['id'];
-        $rsp = config('wx.msg');
-        if((new Address())->setDefault($user->id, $addressId)) {
-            $rsp['state'] = 1;
-            $rsp['msg'] = '设置默认地址失败';
+        $rsp = config('response.msg');
+        $addressModel = new Address();
+        if ($addressModel->isExist($user->id, $addressId) === false) {
+            return config('response.addr_set_fail');
         }
+        $addressModel->setDefault($user->id, $addressId);
         return $rsp;
     }
 }

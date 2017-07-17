@@ -42,13 +42,13 @@ class GoodsCarController extends Controller
         $goodsId = $request->input('goods_id');
         $goodsModel = new Goods();
         $goodsCarModel = new GoodsCar();
-        //检查商品是否是未开售或者是已过期的商品
-        if(empty($goodsInfo = $goodsModel->get($goodsId)) || $goodsInfo->status != 0) {
-            throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
-        }
+        $this->checkGoodsWork($goodsModel, $goodsId);
         $goodsNum = $request->input('goods_num');
         $goodsCar = $goodsCarModel->hasGoods($user->id, $goodsId);
-        if(!empty($goodsCar)) {
+        if ($goodsCar !== false) {
+            if ($goodsNum+$goodsCar->goods_num > config('wx.max_goods_num')) {
+                throw new ApiException(config('error.goods_num_over.msg'), config('error.goods_num_over.code'));
+            }
             $goodsCarModel->updateGoodsNum($user->id, $goodsCar->id, $goodsNum+$goodsCar->goods_num);
         } else {
             $goodsCarModel->add([
@@ -58,44 +58,64 @@ class GoodsCarController extends Controller
                         'created_at' => time(),
                     ]);
         }
-        return config('wx.msg');
+        return config('response.success');
     }
     /**
      * [更新购物车]
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function update(Request $request, $user)
+    public function update(Request $request, $user, $goodsCarId)
     {
         $rules = [
             'goods_num' => 'required|integer|min:1|max:999',
         ];
         $this->validate($request, $rules);
-        $id = $request->route()[2]['id'];
         $goodsNum = $request->input('goods_num');
         $goodsCarModel = new GoodsCar();
-        //获取购物车对象集合,判断是否存在异常的购物车
-        $goodsCars = obj2arr($goodsCarModel->mgetByGoodsCarIds($user->id, [$id]));
-        if(empty($goodsCars)) {
-            throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
+        $goodsCar = $goodsCarModel->get($user->id, $goodsCarId);
+        if (!$goodsCarModel->canUpdate($goodsCar)) {
+            return config('response.goods_car_update_fail');
         }
-        $goodsCarModel->updateGoodsNum($user->id, $id, $goodsNum);
-        return config('wx.msg');
+        $goodsCarModel->updateGoodsNum($user->id, $goodsCarId, $goodsNum);
+        return config('response.success');
+    }
+    /**
+     * [检查商品是否是未开售或者是已过期的商品]
+     * @param  [type] $goodsModel [description]
+     * @param  [type] $goodsId    [description]
+     * @return [type]             [description]
+     */
+    private function checkGoodsWork($goodsModel, $goodsId)
+    {
+        if(empty($goodsInfo = $goodsModel->get($goodsId)) || $goodsInfo->status != 0) {
+            throw new ApiException(config('error.add_goods_exception.msg'), config('error.add_goods_exception.code'));
+        }
     }
     /**
      * [删除购物车]
      * @param  Request $request [Request实例]
      * @return [Integer]           [0表示成功1表示失败]
      */
-    public function delete(Request $request, $user)
+    public function delete(Request $request, $user, $goodsCarId)
     {
-        $goodsCarId = $request->route()[2]['id'];
-        (new GoodsCar())->remove($user->id, $goodsCarId);
-        return config('wx.msg');
+        $goodsCarModel = new GoodsCar();
+        $goodsCar = $goodsCarModel->get($user->id, $goodsCarId);
+        if (!$goodsCarModel->canOperate($goodsCar)) {
+            return config('response.addr_rm_fail');
+        }
+        $goodsCarModel->remove($user->id, $goodsCarId);
+        return config('response.success');
     }
+    /**
+     * [获取购物车总数]
+     * @param  Request $request [description]
+     * @param  [type]  $user    [description]
+     * @return [type]           [description]
+     */
     public function getAll(Request $request, $user)
     {
-        $rsp = config('wx.msg');
+        $rsp = config('response.success');
         $rsp['num'] = (new GoodsCar())->getAllNum($user->id);
         return $rsp;
     }

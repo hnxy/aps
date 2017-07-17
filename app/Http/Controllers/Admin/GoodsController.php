@@ -10,7 +10,7 @@ use App\Http\Controllers\Controller;
 class GoodsController extends Controller
 {
     /**
-     * [store description]
+     * [发布新的商品]
      * @param  Request $request [description]
      * @return [type]           [description]
      */

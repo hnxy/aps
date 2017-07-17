@@ -15,7 +15,8 @@ class Address extends Model
         if(is_null($id)) {
             $default = app('db')->table(self::$model)
                                 ->where([
-                                    ['state', '=', '0'],
+                                    ['is_default', '=', 1],
+                                    ['is_del', '=', 0],
                                     ['user_id', '=', $userId],
                                 ])
                                 ->first();
@@ -25,7 +26,7 @@ class Address extends Model
             return app('db')->table(self::$model)
                             ->where([
                                 ['user_id', '=', $userId],
-                                ['state', '<>', 2],
+                                ['is_del', '=', 0],
                             ])
                             ->orderBy('id', 'desc')
                             ->first();
@@ -54,7 +55,7 @@ class Address extends Model
                         ->offset(($page-1)*$limit)
                         ->where([
                             ['user_id', '=', $userId],
-                            ['state', '<>', 2]
+                            ['is_del', '=', 0]
                         ])
                         ->orderBy('created_at', 'desc')
                         ->get();
@@ -67,23 +68,23 @@ class Address extends Model
                             ['id', '=', $id],
                             ['user_id', '=', $userId],
                         ])
-                        ->update(['state' => '2']);
+                        ->update(['is_del' => 1]);
     }
     public static function setDefault($userId, $id)
     {
         app('db')->table(self::$model)
                  ->where([
                         ['user_id', '=', $userId],
-                        ['state', '<>', 2],
+                        ['is_del', '=', 0],
                     ])
-                 ->update(['state' => 1]);
+                 ->update(['is_default' => 0]);
         return  app('db')->table(self::$model)
                          ->where([
                             ['id', '=', $id],
                             ['user_id', '=', $userId],
-                            ['state', '<>', 2],
+                            ['is_del', '=', 0],
                         ])
-                         ->update(['state' => 0]);
+                         ->update(['is_default' => 1]);
     }
      /**
      * [更新地址信息]

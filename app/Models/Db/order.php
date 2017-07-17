@@ -70,8 +70,9 @@ class Order extends Model
                         ->where([
                             ['agent_id', '=', $agentId],
                             ['id', '=', $id],
+                            ['is_del', '=', 0],
                         ])
-                        ->whereIn('order_status', [1, 2])
+                        ->whereIn('order_status', [2, 3, 4])
                         ->orderBy('created_at','desc')
                         ->first();
     }
@@ -89,9 +90,10 @@ class Order extends Model
         return app('db')->table(self::$model)
                         ->where([
                             ['agent_id', '=', $agentId],
+                            ['is_del', '=', 0],
                         ])
                         ->whereBetween('created_at', [$start, $end])
-                        ->whereIn('order_status', [1, 2])
+                        ->whereIn('order_status', [2, 3, 4])
                         ->limit($limit)
                         ->offset(($page - 1) * $limit)
                         ->orderBy('created_at','desc')

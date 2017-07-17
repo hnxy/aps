@@ -8,7 +8,11 @@ use App\Http\Controllers\Controller;
 
 class CouponController extends Controller
 {
-
+    /**
+     * [获取新的优惠码]
+     * @param  Request $request [description]
+     * @return [type]           [description]
+     */
     public function index(Request $request)
     {
         $rules = [
@@ -26,6 +30,12 @@ class CouponController extends Controller
         $rsp['num'] = count($rsp['items']);
         return $rsp;
     }
+    /**
+     * [商家发布新的优惠码]
+     * @param  Request $request [description]
+     * @param  [type]  $agent   [description]
+     * @return [type]           [description]
+     */
     public function store(Request $request, $agent)
     {
         $rules = [
@@ -58,13 +68,19 @@ class CouponController extends Controller
                 'all_times' => $request->input('all_times'),
             ]);
         }
-        return config('wx.msg');
+        return config('response.success');
     }
-    public function delete(Request $request, $agent)
+    /**
+     * [删除优惠码]
+     * @param  Request $request [description]
+     * @param  [type]  $agent   [description]
+     * @return [type]           [description]
+     */
+    public function delete(Request $request, $agent, $couponId)
     {
-        $rsp = config('wx.msg');
-        if(!(new Coupon())->remove($agent->id, $request->route()[2]['id'])) {
-            $rsp['state'] = 1;
+        $rsp = config('response.success');
+        if(!(new Coupon())->remove($agent->id, $couponId)) {
+            $rsp['status'] = 1;
             $rsp['msg'] = '删除优惠券失败';
         }
         return $rsp;
