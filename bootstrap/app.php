@@ -25,8 +25,8 @@ $app = new Laravel\Lumen\Application(
 
 $app->configure('wx');
 $app->configure('error');
-
-// $app->withFacades();
+$app->configure('database');
+$app->withFacades();
 
 // $app->withEloquent();
 
@@ -84,6 +84,7 @@ $app->routeMiddleware([
 // $app->register(App\Providers\AppServiceProvider::class);
 // $app->register(App\Providers\AuthServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
+$app->register(Illuminate\Redis\RedisServiceProvider::class);
 $app->register('App\Providers\RouteBindingServiceProvider');
 /*
 |--------------------------------------------------------------------------
