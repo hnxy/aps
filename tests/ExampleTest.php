@@ -12,10 +12,7 @@ class ExampleTest extends TestCase
      */
     public function testExample()
     {
-        $this->get('/');
-
-        $this->assertEquals(
-            $this->app->version(), $this->response->getContent()
-        );
+        $response = $this->call('GET', '/ping');
+        $this->assertEquals(200, $response->status());
     }
 }
