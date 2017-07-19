@@ -11,6 +11,13 @@ use App\Models\Db\Order as DbOrder;
 class Order extends Model
 {
     public static $model = 'Order';
+    const orderStauts = [
+        'WAIT_PAY' => 1,
+        'WAIT_SEND' => 2,
+        'WAIT_RECV' => 3,
+        'IS_FINISH' => 4,
+        'IS_CANCEL' => 5,
+    ];
     /**
      * [创建新订单]
      * @param  [Array] $orderMsg [订单的信息]
@@ -45,7 +52,6 @@ class Order extends Model
         $time = time();
         $sendTime = 99999999999;
         $timespace = 999;
-        $goodsCarMap = getMap($goodsCars, 'goods_id');
         $goodsModel = new Goods();
         foreach ($goodsCars as $goodsCar) {
             $goodsIds[] = $goodsCar->goods_id;
@@ -97,6 +103,13 @@ class Order extends Model
                 ['user_id', '=', $userId],
                 ['is_del', '=', 0],
             ];
+        } elseif($status == 1) {
+            $arr['where'] = [
+                ['user_id', '=', $userId],
+                ['is_del', '=', 0],
+                ['order_status', '=', $status],
+                ['created_at', '>', time() - config('wx.order_work_time')],
+            ];
         } else {
             $arr['where'] = [
                 ['user_id', '=', $userId],
@@ -129,7 +142,6 @@ class Order extends Model
             $sendPrice = sprintf('%.2f', $order->send_price);
             $sendTime = formatTime($goods->send_time);
             $priceInfo[] = ['text' => '配送费', 'value' => '￥'.$sendPrice];
-            $priceInfo[] = ['text' => "共1件商品", 'value' => "合计:￥{$allPrice}(含运费￥{$sendPrice})"];
             $otherInfo['buttons'] = $this->getButtons($order);
             $otherInfo['texts'] = $this->getTexts($order, $sendTime);
             $orderInfos[] =[
@@ -138,6 +150,7 @@ class Order extends Model
                 'express_info' => $express,
                 'price_info' => $priceInfo,
                 'other_info' => $otherInfo,
+                'summary' =>  ['goods_count' => "共1件商品", 'price_count' => "合计:￥{$allPrice}", 'send_price_count' => "(含运费￥{$sendPrice})"],
             ];
             $goodsInfo = $priceInfo = [];
         }
@@ -181,12 +194,12 @@ class Order extends Model
     }
     private function getButtons($order)
     {
-        $otherInfo[] = ['name' => '取消订单', 'state' => $this->canPay($order)];
-        $otherInfo[] = ['name' => '立即支付', 'state' => $this->canPay($order)];
-        $otherInfo[] = ['name' => '确认收货', 'state' => $this->canFinish($order)];
-        $otherInfo[] = ['name' => '查看物流', 'state' => $this->canSearch($order)];
-        $otherInfo[] = ['name' => '联系客服', 'state' => $this->canCall($order)];
-        $otherInfo[] = ['name' => '删除订单', 'state' => $this->canDelete($order)];
+        $otherInfo[] = ['name' => '取消订单', 'click' => 1, 'img_url' => '../../../../static/willpay/cancel.png', 'state' => $this->cancelable($order)];
+        $otherInfo[] = ['name' => '立即支付', 'click' => 2, 'img_url' => '../../../../static/willpay/pay.png', 'state' => $this->canPay($order)];
+        $otherInfo[] = ['name' => '确认收货', 'click' => 3, 'img_url' => '../../../../static/willget/got.png', 'state' => $this->canFinish($order)];
+        $otherInfo[] = ['name' => '查看物流', 'click' => 4, 'img_url' => '../../../../static/willget/wuliu.png', 'state' => $this->canSearch($order)];
+        $otherInfo[] = ['name' => '联系客服', 'click' => 5, 'img_url' => '../../../../static/alldd/kefu.png', 'state' => $this->canCall($order)];
+        $otherInfo[] = ['name' => '删除订单', 'click' => 6, 'img_url' => '../../../../static/alldd/del.png', 'state' => $this->canDelete($order)];
         return $otherInfo;
     }
     private function getTexts($order, $sendTime)
@@ -199,7 +212,21 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if ($order->order_status == 2) {
+        if ($order->order_status == self::orderStauts['WAIT_SEND']) {
+            return true;
+        }
+        return false;
+    }
+    public function cancelable($order)
+    {
+        if (!$this->isExist($order)) {
+            return false;
+        }
+        $expired = config('wx.order_work_time');
+        if ($order->created_at + $expired < time() ) {
+            return false;
+        }
+        if ($order->order_status == self::orderStauts['WAIT_PAY'] ) {
             return true;
         }
         return false;
@@ -209,11 +236,11 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        $expired = config('wx.order_work_time')*3600;
-        if ($order->created_at + $expired < time() ) {
+        $expired = config('wx.order_work_time');
+        if ($order->created_at + $expired < time()) {
             return false;
         }
-        if ($order->order_status == 1 ) {
+        if ($order->order_status == self::orderStauts['WAIT_PAY']) {
             return true;
         }
         return false;
@@ -223,7 +250,7 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if ($order->order_status == 4) {
+        if (in_array($order->order_status, [self::orderStauts['IS_FINISH'], self::orderStauts['IS_CANCEL']])) {
             return true;
         }
         return false;
@@ -236,7 +263,7 @@ class Order extends Model
         if (is_null($order->logistics_code)) {
             return false;
         }
-        if ($order->order_status == 3) {
+        if ($order->order_status == self::orderStauts['WAIT_RECV']) {
             return true;
         }
         return false;
@@ -246,7 +273,7 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if (in_array($order->order_status, [3, 4])) {
+        if (in_array($order->order_status, [self::orderStauts['WAIT_RECV'], self::orderStauts['IS_FINISH']])) {
             return true;
         }
         return false;
@@ -256,7 +283,7 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if ($order->order_status == 4) {
+        if ($order->order_status == self::orderStauts['IS_FINISH']) {
             return true;
         }
         return false;
@@ -315,6 +342,14 @@ class Order extends Model
             'price_info' => $priceInfos,
             'goods_car_info' => $goodsCarInfos,
         ];
+    }
+    public function getTypeCount($userId)
+    {
+        $counts = [];
+        foreach (self::orderStauts as $key => $value) {
+            $counts[$value] = DbOrder::count($userId, $value);
+        }
+        return $counts;
     }
     public function modifyByUser($orderId, $userId, $arr)
     {
