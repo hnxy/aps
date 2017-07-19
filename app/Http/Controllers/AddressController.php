@@ -133,7 +133,7 @@ class AddressController extends Controller
      */
     public function delete(Request $request, $user, $addressId)
     {
-        $rsp = config('response.msg');
+        $rsp = config('response.success');
         $addressModel = new Address();
         if ($addressModel->isExist($user->id, $addressId) === false) {
             return config('response.addr_rm_fail');
@@ -147,7 +147,7 @@ class AddressController extends Controller
      */
     public function setDefault(Request $request, $user, $addressId)
     {
-        $rsp = config('response.msg');
+        $rsp = config('response.success');
         $addressModel = new Address();
         if ($addressModel->isExist($user->id, $addressId) === false) {
             return config('response.addr_set_fail');

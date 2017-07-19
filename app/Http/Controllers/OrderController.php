@@ -22,6 +22,7 @@ class OrderController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [返回包含临时订单的信息]
      */
+
     public function preOrder(Request $request, $user)
     {
         $rules = [
@@ -226,8 +227,9 @@ class OrderController extends Controller
      * @param  Request $request [description]
      * @return [type]           [description]
      */
-    public function getClassesOrder(Request $request, $user)
+    public function index(Request $request, $user)
     {
+        $statuses = ['全部', '待付款', '待发货', '待收货'];
         $rules = [
             'limit' => 'integer|max:100|min:10',
             'page' => 'integer|min:1',
@@ -240,10 +242,14 @@ class OrderController extends Controller
         $page = $request->input('page', 1);
         $orderModel = new Order();
         $orders = $orderModel->mget($user->id, $limit, $page, $status);
+        foreach ($statuses as $key => $value) {
+            $rsp['actives'][] = ['index' => $key, 'actived' => $status == $key ? true : false ];
+        }
         if(empty(obj2arr($orders))) {
             $rsp['status'] = 0;
             $rsp['items'] = [];
             $rsp['num'] = 0;
+            $rsp['msg'] = '您还没有此类型订单';
         } else {
             $rsp['status'] = 0;
             $rsp['items'] = $orderModel->getOrdersInfo($orders);
@@ -293,7 +299,7 @@ class OrderController extends Controller
         $goodsModel = new Goods();
         $order = $orderModel->get($user->id, $orderId);
         $rsp = config('response.success');
-        if (!$orderModel->canPay($order)) {
+        if (!$orderModel->cancelable($order)) {
             return config('response.order_no_cancel');
         }
         try {
@@ -307,6 +313,11 @@ class OrderController extends Controller
                 app('db')->rollBack();
             }
         return $rsp;
+    }
+    public function getTypeCount($user)
+    {
+        $orderModel = new Order();
+        return $orderModel->getTypeCount($user->id);
     }
 }
 ?>
