@@ -347,7 +347,7 @@ class Order extends Model
     {
         $counts = [];
         foreach (self::orderStauts as $key => $value) {
-            $counts[$value] = DbOrder::count($userId, $value);
+            $counts[$key] = DbOrder::count($userId, $value);
         }
         return $counts;
     }
