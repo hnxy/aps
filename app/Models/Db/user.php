@@ -33,7 +33,7 @@ class User extends Model
     {
 
         return app('db')->table(self::$model)
-                        ->insert();
+                        ->insert($userArr);
     }
      /**
      * [通过openid来更新用户的登录情况]
