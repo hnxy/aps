@@ -33,9 +33,6 @@ class User extends Model
      */
     public function login($userArr)
     {
-        // $user = app('db')->table(self::$model)->where([
-        //         'username' => $userArr['username']
-        //     ])->first();
         $user = DbUser::get(['where' => ['username' => $userArr['username']]]);
         if (empty($user)) {
             throw new ApiException("此用户不存在", 2);
@@ -60,18 +57,54 @@ class User extends Model
     public function loginBy3($userInfo3)
     {
         $user = DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
+        $lastIp = getIp();
+        $token = genToken();
+        $lastLoginTime = time();
         if (empty($user)) {
-            if(DbUser::add($userInfo3)) {
+            $arr = [
+                    'last_login_time' => $lastLoginTime,
+                    'login_count' => 1,
+                    'token' => $token,
+                    'token_expired' => $lastLoginTime + 3600 * 24,
+                    'user_agent' => $userInfo3['User-Agent'],
+                    'last_ip' => $lastIp,
+                    'openid' => $userInfo3['openid'],
+                    'headimgurl' => $userInfo3['headimgurl'],
+                    'access_token' => $userInfo3['access_token'],
+                    'refresh_token' => $userInfo3['refresh_token'],
+                    'code' => $userInfo3['code'],
+                ];
+            if(DbUser::add($arr)) {
                 return DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
             } else {
                 throw new ApiException('用户信息插入失败', config('err.insert_user_arr_err.code') );
             }
         } else {
-            if(DbUser::updateByOpenid($user, $userInfo3['User-Agent'])) {
+            $arr = [
+                'last_login_time' => $lastLoginTime,
+                'login_count' => $user->login_count + 1,
+                'token' => $token,
+                'token_expired' => $lastLoginTime + 3600 * 24,
+                'user_agent' => $userInfo3['User-Agent'],
+                'last_ip' => $lastIp,
+                'headimgurl' => $userInfo3['headimgurl'],
+                'access_token' => $userInfo3['access_token'],
+                'refresh_token' => $userInfo3['refresh_token'],
+                'code' => $userInfo3['code'],
+            ];
+            if(DbUser::updateByOpenid($user->openid, $arr)) {
                 return DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
             } else {
                 throw new ApiException('用户信息更新失败', config('err.insert_user_arr_err.code') );
             }
         }
+    }
+    public function hasCode($code)
+    {
+        $user = DbUser::get(['where' => ['code' => $code]]);
+        if (empty($user)) {
+            return false;
+        }
+        return $user;
     }
 }

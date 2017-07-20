@@ -84,11 +84,11 @@ class UserController extends Controller
     {
         $callbackUrl = url('v1/login3_callback?my_callback='.$request->input('my_callback', config('wx.index')));
         $params = array(
-            'appid'=>'wx105138e40ec74f25',
-            'redirect_uri'=>$callbackUrl,
-            'response_type'=>'code',
-            'scope'=>'snsapi_userinfo',
-            'state'=>'1'
+            'appid'=> config('wx.appid'),
+            'redirect_uri' => $callbackUrl,
+            'response_type' => 'code',
+            'scope' => 'snsapi_userinfo',
+            'state' => '1'
         );
         $url = "https://open.weixin.qq.com/connect/oauth2/authorize?";
         return redirect($url.http_build_query($params).'#wechat_redirect');
@@ -99,23 +99,44 @@ class UserController extends Controller
      */
     public  function login3Callback(Request $request)
     {
-        $code = $request->input('code');
-        $callback = $request->input('my_callback');
         $wx = new Wx();
         $user = new User();
-        $userMsg = $wx->getUserInfo($code);
-        $userMsg['User-Agent'] = $request->header('User-Agent');
+        $code = $request->input('code');
+        $callback = $request->input('my_callback');
+        //判断该code是否存在
+        if(($userInfo = $user->hasCode($code)) === false) {
+            //不存在就通过该code获取access_token
+            $res = $wx->getWebAccessToken($code);
+            //获取用户信息
+            $userMsg = $wx->getUserInfo($res);
+            $userMsg['User-Agent'] = $request->header('User-Agent');
+            $userMsg['code'] = $code;
+            $userMsg['access_token'] = $res['web_access_token'];
+            $userMsg['refresh_token'] = $res['refresh_token'];
+        } else {
+            //检查access_token是否有效
+            if(!$wx->checkAccessTokenWork($userInfo->access_token, $userInfo->openid)) {
+                //刷新access_token,刷新失败则重新授权
+                if(($rspMsp = $wx->refreshAccesstoken($userInfo->refresh_token)) === false) {
+                    return redirect(url('/v1/login3'));
+                }
+                $userInfo->openid = $rspMsp['openid'];
+                $userInfo->access_token = $rspMsp['web_access_token'];
+                $userInfo->refresh_token = $rspMsp['refresh_token'];
+            }
+            $userMsg = $wx->getUserInfo(['openid' => $userInfo->openid, 'web_access_token' => $userInfo->access_token]);
+            $userMsg['User-Agent'] = $request->header('User-Agent');
+            $userMsg['code'] = $userInfo->code;
+            $userMsg['access_token'] = $userInfo->access_token;
+            $userMsg['refresh_token'] = $userInfo->refresh_token;
+        }
         $userInfo = $user->loginBy3($userMsg);
         $params = [
             'token' => $userInfo->token,
-            'uid' => $userInfo->id
+            'uid' => $userInfo->id,
+            'headimgurl' => $userInfo->headimgurl,
         ];
         return redirect($callback.'?'.http_build_query($params));
-    }
-    public function test($myid, $myusername)
-    {
-        var_dump($myid);
-        var_dump($myusername);
     }
 }
 ?>

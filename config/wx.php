@@ -1,8 +1,8 @@
 <?php
     return [
         'token' => 'shop',
-        'appid' => 'wx105138e40ec74f25',
-        'appSecret' => 'adbe1d78ea45b581955cbbd27b189e36',
+        'appid' => 'wx048ce38473905f83',
+        'appSecret' => '693d4dadacd6aa7b08aa2dc1e723e3a5',
         'index' => 'http://xnd.cg0.me',
         'EBusinessID' => '1293532',
         'AppKey' => '7266fdfe-70a1-47ba-b3e5-2c99ebdf70dc',

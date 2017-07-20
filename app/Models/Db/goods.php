@@ -19,9 +19,9 @@ class Goods extends Model
                             ['id', 'title', 'description', 'origin_price', 'price', 'start_time', 'end_time', 'goods_img', 'classes_id', 'unit', 'send_time']
                         )
                           ->where([['end_time', '>=', $nowTime]])
-                          ->offset(($page - 1)*$limit)
                           ->limit($limit)
-                          ->orderBy('id','desc')
+                          ->offset(($page - 1) * $limit)
+                          ->orderBy('id', 'desc')
                           ->get();
     }
 
