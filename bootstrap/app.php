@@ -93,6 +93,7 @@ $app->routeMiddleware([
 // $app->register(App\Providers\EventServiceProvider::class);
 $app->register(Illuminate\Redis\RedisServiceProvider::class);
 $app->register('App\Providers\RouteBindingServiceProvider');
+$app->register('App\Providers\FileUploadServerProvider');
 /*
 |--------------------------------------------------------------------------
 | Load The Application Routes

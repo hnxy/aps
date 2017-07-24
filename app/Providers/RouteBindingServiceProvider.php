@@ -13,9 +13,5 @@ class RouteBindingServiceProvider extends BaseServiceProvider
         $binder = $this->binder;
         $binder->bind('user_id', 'App\Models\User@get');
         $binder->bind('agent_id', 'App\Models\Agent@get');
-        $binder->compositeBind(['id', 'username'], function($id, $username) {
-            $user = (new \App\Models\User())->get($id);
-            return [$user, $username];
-        });
     }
 }

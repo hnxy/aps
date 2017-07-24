@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Coupon;
 use App\Models\GoodsCar;
 use App\Models\Goods;
+use App\Exceptions\ApiException;
 
 class CouponController extends Controller
 {

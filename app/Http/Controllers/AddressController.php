@@ -41,7 +41,7 @@ class AddressController extends Controller
     {
         $rules = [
             'name' => 'required|string',
-            'phone' => 'required|string|regex:[\d{11}]',
+            'phone' => 'required|string|regex:/^\d{11}$/',
             'province' => 'required|integer|max:820000|min:110000',
             'city' => 'required|integer|max:820100|min:110100',
             'area' => 'required|integer|max:659004003|min:110101',
@@ -95,11 +95,11 @@ class AddressController extends Controller
     {
         $rules = [
             'name' => 'required|string',
-            'phone' => 'required|string|regex:[\d{11}]',
+            'phone' => 'required|string|regex:/^\d{11}$/',
             'province' => 'required|integer|max:820000|min:110000',
             'city' => 'required|integer|max:820100|min:110100',
             'area' => 'required|integer|max:659004003|min:110101',
-            'detail' => 'required|string|max:127',
+            'detail' => 'required|string|max:256',
         ];
         $this->validate($request, $rules);
         $name = $request->input('name');

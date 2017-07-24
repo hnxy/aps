@@ -156,8 +156,9 @@ class GoodsCar extends Model
                 ['user_id', '=', $userId],
                 ['goods_id', '=', $goodsId],
                 ['status', '=', 0],
+                ['is_del', '=', 0]
             ]]);
-        if (empty($goodsCar) || $goodsCar->is_del == 1) {
+        if (empty($goodsCar)) {
             return false;
         }
         return $goodsCar;

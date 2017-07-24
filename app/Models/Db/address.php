@@ -35,6 +35,7 @@ class Address extends Model
                         ->where([
                             ['id', '=', $id],
                             ['user_id', '=', $userId],
+                            ['is_del', '=', 0],
                         ])
                         ->first();
     }

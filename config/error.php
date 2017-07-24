@@ -12,5 +12,6 @@
         'no_traces_exception' => ['msg' => '该订单还没有物流', 'code' => 10],
         'not_work_coupon_exception' => ['msg' => '该优惠券无效', 'code' => 11],
         'goods_num_over' => ['msg' => '超出商品的最大值', 'code' => 12],
+        'agent_exist_exception' => ['msg' => '该用户名已存在', 'code' => 13],
     ];
 ?>

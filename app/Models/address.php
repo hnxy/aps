@@ -42,7 +42,7 @@ class Address extends Model
         } else {
             $addrDetail = $this->get($userId, $addrId);
         }
-        if(empty($addrDetail) || $addrDetail->is_del == 1) {
+        if(empty($addrDetail)) {
             return false;
         }
         return $addrDetail;

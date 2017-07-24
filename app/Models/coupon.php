@@ -74,7 +74,6 @@ class Coupon extends Model
         }
         $result = $this->validate($value, $key);
         if(!empty($result) && in_array($result->goods_id, $goodsIds)) {
-            DbCoupon::modifyById($result->id);
             return [
                 'id' => $result->id,
                 'code' => $result->code,

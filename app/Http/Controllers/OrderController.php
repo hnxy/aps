@@ -107,6 +107,10 @@ class OrderController extends Controller
             $goodsCarModel->updateStatus($user->id, $goodsCarIDs, 1);
             //更新商品的库存
             $goodsModel->modifyStock(array_column(obj2arr($goodsCars), 'goods_num', 'goods_id'), 'decrement');
+            //更新优惠券使用次数
+            if(!is_null($couponID)) {
+               $couponModel->modifyById($couponID);
+            }
             //创建订单
             $time = time();
             $combinePayId = Order::getCombinePayId($user->id, $payId);
