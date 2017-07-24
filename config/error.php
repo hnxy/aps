@@ -13,5 +13,7 @@
         'not_work_coupon_exception' => ['msg' => '该优惠券无效', 'code' => 11],
         'goods_num_over' => ['msg' => '超出商品的最大值', 'code' => 12],
         'agent_exist_exception' => ['msg' => '该用户名已存在', 'code' => 13],
+        'pay_not_work_exception' => ['msg' => '支付方式无效', 'code' => 14],
+        'not_work_agent_exception' => ['msg' => '无效的代理者', 'code' => 15],
     ];
 ?>

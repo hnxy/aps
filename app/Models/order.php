@@ -299,12 +299,14 @@ class Order extends Model
     }
     protected function getPay($order)
     {
+        $paymentModel = new Payment();
+        $payment = $paymentModel->get($order->pay_id);
         $payTime = null;
         if(!is_null($order->pay_time))
             $payTime = formatTime($order->pay_time);
         $payInfo[] = ['name' => '订单状态:', 'value' => config('wx.order_status')[$order->order_status]];
         $payInfo[] = ['name' => '订单号:', 'value' => $order->id];
-        $payInfo[] = ['name' => '支付方式:', 'value' => config('wx.pay_by')[$order->pay_by]];
+        $payInfo[] = ['name' => '支付方式:', 'value' => $payment->pay_name];
         $payInfo[] = ['name' => '支付时间:', 'value' => $payTime];
         return $payInfo;
     }

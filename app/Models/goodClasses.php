@@ -14,7 +14,7 @@ class GoodsClasses extends Model
     }
     public function get($id)
     {
-        DbClasses::get(['where' => ['id' => $id] ]);
+        return DbClasses::get(['where' => ['id' => $id] ]);
     }
 }
 ?>
