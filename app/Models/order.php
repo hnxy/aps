@@ -137,6 +137,7 @@ class Order extends Model
         foreach ($orders as $order) {
             $goodsIds[] = $order->goods_id;
         }
+        $goodsIds = array_unique($goodsIds);
         $goodsMap = $this->getGoodsMap($goodsIds);
         if (empty($goodsMap)) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
