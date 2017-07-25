@@ -94,6 +94,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
             $app->post('/login', 'UserController@login');
         });
     });
+    // $app->get('/file', 'FileController@update');
 });
 
 

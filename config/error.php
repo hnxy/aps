@@ -15,5 +15,8 @@
         'agent_exist_exception' => ['msg' => '该用户名已存在', 'code' => 13],
         'pay_not_work_exception' => ['msg' => '支付方式无效', 'code' => 14],
         'not_work_agent_exception' => ['msg' => '无效的代理者', 'code' => 15],
+        'goods_empty_exception' => ['msg' => '该商品不存在', 'code' => 16],
+        'contain_order_not_work_exception' => ['msg' => '包含无效的订单', 'code' => 17],
+        'goods_info_exception' => ['msg' => '商品信息异常', 'code' => 18],
     ];
 ?>

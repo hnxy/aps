@@ -114,14 +114,11 @@ class Order extends Model
                         ->orderBy('created_at','desc')
                         ->get();
     }
-    public static function mgetByOrderIds($userId, $orderIds)
+    public static function mgetByOrderIds($arr)
     {
         return app('db')->table(self::$model)
-                        ->where([
-                                ['user_id', '=', $user_id],
-                                ['is_del', '=', 0],
-                            ])
-                        ->whereIn('id', $orderIds)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
                         ->get();
     }
 }

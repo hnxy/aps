@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Db\GoodsCar as DbGoodsCar;
+use App\Exceptions\ApiException;
 
 class GoodsCar extends Model
 {
@@ -99,6 +100,9 @@ class GoodsCar extends Model
         }
         $goodses = $goodsModel->mgetByIds($goodsIds);
         $goodsMap = getMap($goodses, 'id');
+        if (count(obj2arr($goodses)) != count($goodsIds)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
         $rsp = [];
         foreach ($goodsCars as $goodsCar) {
             $goods = $goodsMap[$goodsCar->goods_id];

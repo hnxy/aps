@@ -62,7 +62,7 @@ class OrderController extends Controller
         if(!$orderModel->isExist($order)) {
             return config('response.order_not_exist');
         }
-        if ( ($addrDetail = $this->hasAddr($user->id, $order->addr_id)) === false) {
+        if (empty(($addrDetail = $addressModel->get($user->id, $order->addr_id)))) {
             return config('response.addr_not_exist');
         }
         $rsp = $orderModel->getOrderInfo($order);
@@ -100,8 +100,9 @@ class OrderController extends Controller
         }
         // 获取购物车的信息,该返回的数据为对象数组
         $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
+        $this->checkPayEnable($payId);
         $this->checkGoodsCarWork($goodsCars, $goodsCarIds);
-        $this->checkOrderArgs($goodsCars, $couponId, $agentId, $payId);
+        $this->checkOrderArgs($goodsCars, $couponId, $agentId);
         try {
             app('db')->beginTransaction();
             // 更新购物车的状态
@@ -114,7 +115,6 @@ class OrderController extends Controller
             }
             //创建订单
             $time = time();
-            //4是pay_Id现在还没有，先用4代替着
             $combinePayId = Order::getCombinePayId($user->id, $payId);
             foreach ($goodsCars as $goodsCar) {
                 $orderNum = $this->getOrderNum(16);
@@ -169,23 +169,28 @@ class OrderController extends Controller
      * @param  [type] $agentId   [description]
      * @return [type]            [description]
      */
-    private function checkOrderArgs($goodsCars, $couponId, $agentId, $payId)
+    private function checkPayEnable($payId)
     {
-        $couponModel = new Coupon();
-        $agentModel = new Agent();
-        $goodsModel = new Goods();
         $paymentModel = new Payment();
         if (!$paymentModel->payEnable($payId)) {
             throw new ApiException(config('error.pay_not_work.msg'), config('error.pay_not_work.code'));
         }
+    }
+    private function checkOrderArgs($goodsCars, $couponId, $agentId)
+    {
+        $couponModel = new Coupon();
+        $agentModel = new Agent();
+        $goodsModel = new Goods();
         //检查代理是否存在
-        if (!is_null($agentId) && !$agentModel->has($agentId)) {
-            throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
-        }
-        //检查优惠码是否有效
-        $goodsIds = array_column(obj2arr($goodsCars), 'goods_Id');
-        if (!is_null($couponId) && !$couponModel->checkWork($couponId, 'Id', $goodsIds)) {
-            throw new ApiException(config('error.not_work_coupon_exception.msg'), config('error.not_work_coupon_exception.code'));
+        if (!is_null($agentId)) {
+            if (!$agentModel->has($agentId)) {
+                throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
+            }
+            //检查优惠码是否有效
+            $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
+            if (!is_null($couponId) && !$couponModel->checkWork($couponId, 'id', $goodsIds, $agentId)) {
+                throw new ApiException(config('error.not_work_coupon_exception.msg'), config('error.not_work_coupon_exception.code'));
+            }
         }
         //判断购物车是否有过期商品或商品库存是否足够
         if (($abnormal = $goodsModel->isAbnormal($goodsCars)) !== false) {
@@ -209,11 +214,22 @@ class OrderController extends Controller
     {
         $rules = [
             'order_ids' => 'required|string',
+            'pay_id' => 'required|integer',
         ];
         $this->valIdate($request, $rules);
+        $orderModel = new Order();
+        $paymentModel = new Payment();
         $orderIds = $request->input('order_ids');
-        // $combinePayId = getCombinePayId($user->Id);
-        // Order::mofifyCombinPayId($orderIds, $combinePayId);
+        array_pop($orderIds);
+        $payId = $request->input('pay_id');
+        $this->checkPayEnable($payId);
+        $orders = $orderModel->mgetPayOrderByIds($user->id, $orderIds);
+        //检查是否有无效的订单
+        if (count(obj2arr($orders) != count($orderIds))) {
+            throw new ApiException(config('error.contain_order_not_work.msg'), config('error.contain_order_not_work.code'));
+        }
+        $combinePayId = getCombinePayId($user->id, $payId);
+        $orderModel->modifyCombinePayId($orderIds, $combinePayId);
     }
     /**
      * [删除订单]

@@ -10,7 +10,7 @@ class Address extends Model
      * @param  [Integer] $id [地址的ID]
      * @return [Object]     [地址信息对象]
      */
-    public static function get($userId, $id = null)
+    public static function getIllege($userId, $id = null)
     {
         if(is_null($id)) {
             $default = app('db')->table(self::$model)
@@ -48,7 +48,12 @@ class Address extends Model
         return app('db')->table(self::$model)
                         ->insert($addrArr);
     }
-
+    public static function get($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where($arr['where'])
+                        ->first();
+    }
     public static function mget($userId, $limit, $page)
     {
         return app('db')->table(self::$model)

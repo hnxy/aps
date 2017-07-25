@@ -52,12 +52,13 @@ class Order extends Model
         $time = time();
         $sendTime = 99999999999;
         $timespace = 999;
-        $goodsModel = new Goods();
         foreach ($goodsCars as $goodsCar) {
             $goodsIds[] = $goodsCar->goods_id;
         }
-        $goodses = $goodsModel->mgetByIds($goodsIds);
-        $goodsMap = getMap($goodses, 'id');
+        $goodsMap = $this->getGoodsMap($goodsIds);
+        if (empty($goodsMap)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
         foreach ($goodsCars as $goodsCar) {
             $goodsInfo = $goodsMap[$goodsCar->goods_id];
             $currentPrice = sprintf('%.2f', $goodsInfo->price*$goodsCar->goods_num);
@@ -80,6 +81,15 @@ class Order extends Model
             'price_info' => $priceInfos,
             'goods_car_info' => $goodsCarInfos,
         ];
+    }
+    protected function getGoodsMap($goodsIds)
+    {
+        $goodsModel = new Goods();
+        $goodses = $goodsModel->mgetByIds($goodsIds);
+        if (count(obj2arr($goodses)) != count($goodsIds)) {
+            return [];
+        }
+        return getMap($goodses, 'id');
     }
     public function isExist($order)
     {
@@ -123,13 +133,14 @@ class Order extends Model
     {
         $orderInfos = $otherInfo = $goodsIds = $goodsIds = [];
         $time = time();
-        //获取商品id,同时获取商品与订单之间的映射
-        $goodsModel = new Goods();
+        //获取商品id,同时获取商品于id之间的映射
         foreach ($orders as $order) {
             $goodsIds[] = $order->goods_id;
         }
-        $goodses = $goodsModel->mgetByIds($goodsIds);
-        $goodsMap = getMap($goodses, 'id');
+        $goodsMap = $this->getGoodsMap($goodsIds);
+        if (empty($goodsMap)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
         foreach ($orders as $order) {
             $allPrice = 0;
             $goods = $goodsMap[$order->goods_id];
@@ -328,6 +339,9 @@ class Order extends Model
         $priceInfos = $pay_info = [];
         $goodsModel = new Goods();
         $goodsInfo = $goodsModel->get($order->goods_id);
+        if (is_null($goodsInfo)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
         $allPrice = $this->getAllPriceByCouponId(null, $goodsInfo->price*$order->goods_num);
         $sendTime = formatY($goodsInfo->send_time);
         $express = $this->getExpress($order->express_id);
@@ -423,9 +437,17 @@ class Order extends Model
         $uarr['update'] = $arr;
         return DbOrder::modify($uarr);
     }
-    public function mgetByOrderIds($userId, $orderIds)
+    public function mgetPayOrderByIds($userId, $orderIds)
     {
-        return DbOrder::mgetByOrderIds($userId, $orderIds);
+        $arr['where'] = [
+            ['user_id', '=', $userId],
+            ['is_del', '=', 0],
+            ['order_status', '=', 1],
+            ['created_at', '>', time() - config('wx.order_work_time')],
+        ];
+        $arr['whereIn']['key'] = 'id';
+        $arr['whereIn']['values'] = $orderIds;
+        return DbOrder::mgetByOrderIds($arr);
     }
     public static function modifyCombinePayId($orderIds, $combinePayId)
     {

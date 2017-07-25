@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Db\Coupon as DbCoupon;
+use App\Exceptions\ApiException;
 
 class Coupon extends Model
 {
@@ -50,12 +51,13 @@ class Coupon extends Model
      * @param  [String] $couponCode [优惠码]
      * @return [Object]             [包含该优惠码信息的对象]
      */
-    private function validate($value, $key)
+    private function validate($value, $key, $agentId)
     {
         return DbCoupon::get([
                             'where' => [
                                     [$key, '=', $value],
                                     ['expired', '>', time()],
+                                    ['agent_id', '=', $agentId],
                             ],
                             'whereColumn' => [
                                 ['times', '<', 'all_times']
@@ -68,11 +70,11 @@ class Coupon extends Model
      * @param  [String] $key   [字段名]
      * @return [Object]        [包含该优惠券ID信息的对象]
      */
-    public  function checkWork($value, $key, $goodsIds) {
+    public  function checkWork($value, $key, $goodsIds, $agentId) {
         if(is_null($value)) {
             return [];
         }
-        $result = $this->validate($value, $key);
+        $result = $this->validate($value, $key, $agentId);
         if(!empty($result) && in_array($result->goods_id, $goodsIds)) {
             return [
                 'id' => $result->id,
@@ -109,14 +111,18 @@ class Coupon extends Model
     {
         return DbCoupon::get(['where' => ['id' => $id] ]);
     }
-    public function couponValidate($goodsCars, $code)
+    public function couponValidate($goodsCars, $code, $agentId)
     {
         $allPrice = 0;
         $goodsModel = new Goods();
         $goods = getMap($goodsCars, 'goods_id');
-        if($coupon = $this->checkWork($code, 'code', array_keys($goods))) {
+        if($coupon = $this->checkWork($code, 'code', array_keys($goods), $agentId)) {
             $allPrice = (-1)*$coupon['price'];
-            foreach ($goodsModel->mgetByIds(array_keys($goods)) as $goodsInfo) {
+            $goodses = $goodsModel->mgetByIds(array_keys($goods));
+            if (count(obj2arr($goodses)) != count(array_keys($goods))) {
+                throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+            }
+            foreach ($goodses as $goodsInfo) {
                 $allPrice += $goodsInfo->price*$goods[$goodsInfo->id]->goods_num;
             }
             $coupon['all_price'] = sprintf('%0.2f', $allPrice);

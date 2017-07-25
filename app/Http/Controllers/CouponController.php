@@ -46,10 +46,12 @@ class CouponController extends Controller
         $rules = [
             'code' => 'required|string|max:32',
             'goods_car_ids' => 'required|string',
+            'agent_id' =>  'required|integer',
         ];
         $this->validate($request, $rules);
         $rsp = config('response.success');
         $code = $request->input('code');
+        $agentId = $request->input('agent_id');
         $goodsCarIds = explode(',', $request->input('goods_car_ids'));
         array_pop($goodsCarIds);
         $goodsCarModel = new GoodsCar();
@@ -58,7 +60,7 @@ class CouponController extends Controller
         if(count(obj2arr($goodsCars)) != count($goodsCarIds)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
-        if($coupon = $couponModel->couponValidate($goodsCars, $code)) {
+        if($coupon = $couponModel->couponValidate($goodsCars, $code, $agentId)) {
             $rsp['code'] = 0;
             $rsp['msg'] = $coupon;
         } else {

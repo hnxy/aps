@@ -72,7 +72,10 @@ class GoodsController extends Controller
         $goodsImgs = new GoodsImg();
         $goodsClasses = new GoodsClasses();
         $goodsInfo = $goods->getDetail($id);
-        if( time() < $goodsInfo->start_time) {
+        if (empty($goodsInfo)) {
+            throw new ApiException(config('error.goods_empty_exception.msg'), config('error.goods_empty_exception.code'));
+        }
+        if ( time() < $goodsInfo->start_time) {
             $goodsInfo->status_text = '即将开售';
             $goodsDetail = [
                 'buy' => [
@@ -88,7 +91,7 @@ class GoodsController extends Controller
                     'can_click' => 0,
                     ],
             ];
-        } else if(time() > $goodsInfo->end_time) {
+        } else if (time() > $goodsInfo->end_time) {
             $goodsInfo->status_text = null;
             $goodsDetail = [
                 'buy' => [

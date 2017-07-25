@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Db\Goods as DbGoods;
+use App\Exceptions\ApiException;
+
 
 class Goods extends Model
 {
@@ -64,6 +66,9 @@ class Goods extends Model
         }
         $time = time();
         $goodsInfos = DbGoods::mgetByIds(array_keys($goods));
+        if (count(obj2arr($goodsInfos)) != count(array_keys($goods))) {
+                throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
         foreach ($goodsInfos as $goodsInfo) {
             if($time < $goodsInfo->start_time || $time >= $goodsInfo->end_time) {
                 return [

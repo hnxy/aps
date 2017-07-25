@@ -10,9 +10,12 @@ use App\Models\Db\Address as DbAddress;
 class Address extends Model
 {
     public static $model = 'Address';
-    public function get($userId, $addrId = null)
+    public function get($userId, $addrId)
     {
-        return DbAddress::get($userId, $addrId);
+        return DbAddress::get(['where' => [
+                ['user_id', '=', $userId],
+                ['id', '=', $addrId],
+            ]]);
     }
     /**
      * [获取完整的地址]
@@ -38,9 +41,9 @@ class Address extends Model
     public function isExist($userId, $addrId)
     {
         if(empty($addrId)) {
-            $addrDetail = $this->get($userId);
+            $addrDetail = DbAddress::getIllege($userId);
         } else {
-            $addrDetail = $this->get($userId, $addrId);
+            $addrDetail = DbAddress::getIllege($userId, $addrId);
         }
         if(empty($addrDetail)) {
             return false;
