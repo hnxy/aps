@@ -2,9 +2,18 @@
 
 namespace App\Models\Db;
 
+use Illuminate\Support\Facades\DB;
+
 class Order extends Model
 {
     private static $model = 'order';
+    const orderStauts = [
+        'WAIT_PAY' => 1,
+        'WAIT_SEND' => 2,
+        'WAIT_RECV' => 3,
+        'IS_FINISH' => 4,
+        'IS_CANCEL' => 5,
+    ];
     /**
      * [创建新订单]
      * @param  [Array] $orderMsg [订单的信息]
@@ -25,6 +34,12 @@ class Order extends Model
         return app('db')->table(self::$model)
                         ->where($arr['where'])
                         ->first();
+    }
+    public static function count($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->count();
     }
     /**
      * [删除订单]
@@ -72,7 +87,7 @@ class Order extends Model
                             ['id', '=', $id],
                             ['is_del', '=', 0],
                         ])
-                        ->whereIn('order_status', [2, 3, 4])
+                        ->whereIn('order_status', [self::orderStatus['WAIT_SEND'], self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']])
                         ->orderBy('created_at','desc')
                         ->first();
     }
@@ -93,20 +108,23 @@ class Order extends Model
                             ['is_del', '=', 0],
                         ])
                         ->whereBetween('created_at', [$start, $end])
-                        ->whereIn('order_status', [2, 3, 4])
+                        ->whereIn('order_status', [self::orderStatus['WAIT_SEND'], self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']])
                         ->limit($limit)
                         ->offset(($page - 1) * $limit)
                         ->orderBy('created_at','desc')
                         ->get();
     }
-    public static function mgetByOrderIds($userId, $orderIds)
+    public static function mgetByOrderIds($arr)
     {
         return app('db')->table(self::$model)
-                        ->where([
-                                ['user_id', '=', $user_id],
-                                ['is_del', '=', 0],
-                            ])
-                        ->whereIn('id', $orderIds)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
+                        ->get();
+    }
+    public static function mgetByCombinePayId($combinePayId)
+    {
+        return app('db')->table(self::$model)
+                        ->where('combine_pay_id', $combinePayId)
                         ->get();
     }
 }

@@ -101,7 +101,7 @@ class GoodsCarController extends Controller
     {
         $goodsCarModel = new GoodsCar();
         $goodsCar = $goodsCarModel->get($user->id, $goodsCarId);
-        if (!$goodsCarModel->canOperate($goodsCar)) {
+        if (!$goodsCarModel->canDelete($goodsCar)) {
             return config('response.addr_rm_fail');
         }
         $goodsCarModel->remove($user->id, $goodsCarId);

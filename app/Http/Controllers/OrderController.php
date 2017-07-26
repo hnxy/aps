@@ -14,6 +14,8 @@ use App\Models\Coupon;
 use App\Exceptions\ApiException;
 use App\Models\User;
 use App\Models\Agent;
+use App\Models\Payment;
+use App\Models\Pay;
 
 class OrderController extends Controller
 {
@@ -22,22 +24,23 @@ class OrderController extends Controller
      * @param  Request $request [Request实例]
      * @return [Array]           [返回包含临时订单的信息]
      */
+
     public function preOrder(Request $request, $user)
     {
         $rules = [
             'addr_id' => 'integer',
             'goods_car_ids' => 'required|string',
         ];
-        $this->validate($request, $rules);
-        $goodsCarIDs = explode(',', $request->input('goods_car_ids'));
-        array_pop($goodsCarIDs);
+        $this->valIdate($request, $rules);
+        $goodsCarIds = explode(',', $request->input('goods_car_ids'));
+        array_pop($goodsCarIds);
         $addrId = $request->input('addr_id', null);
         $orderModel = new Order();
         $addressModel = new Address();
         $goodsCarModel = new GoodsCar();
         // 获取购物车的信息,该返回的数据为对象数组
-        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIDs);
-        $this->checkGoodsCarWork($goodsCars, $goodsCarIDs);
+        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
+        $this->checkGoodsCarWork($goodsCars, $goodsCarIds);
         if ( ($addrDetail = $this->hasAddr($user->id, $addrId)) === false) {
             return config('response.addr_not_exist');
         }
@@ -60,7 +63,7 @@ class OrderController extends Controller
         if(!$orderModel->isExist($order)) {
             return config('response.order_not_exist');
         }
-        if ( ($addrDetail = $this->hasAddr($user->id, $order->addr_id)) === false) {
+        if (empty(($addrDetail = $addressModel->get($user->id, $order->addr_id)))) {
             return config('response.addr_not_exist');
         }
         $rsp = $orderModel->getOrderInfo($order);
@@ -81,13 +84,13 @@ class OrderController extends Controller
             'goods_car_ids' => 'required|string',
             'agent_id' => 'integer',
         ];
-        $this->validate($request, $rules);
-        $goodsCarIDs = explode(',', $request->input('goods_car_ids'));
-        array_pop($goodsCarIDs);
+        $this->valIdate($request, $rules);
+        $goodsCarIds = explode(',', $request->input('goods_car_ids'));
+        array_pop($goodsCarIds);
         $payId = $request->input('pay_id');
         $addrId = $request->input('addr_id', null);
-        $couponID = $request->input('coupon_id', null);
-        $agentID = $request->input('agent_id', null);
+        $couponId = $request->input('coupon_id', null);
+        $agentId = $request->input('agent_id', null);
         $rsp = config('response.success');
         $orderModel = new Order();
         $addressModel = new Address();
@@ -97,15 +100,20 @@ class OrderController extends Controller
             return config('error.addr_null_err');
         }
         // 获取购物车的信息,该返回的数据为对象数组
-        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIDs);
-        $this->checkGoodsCarWork($goodsCars, $goodsCarIDs);
-        $this->checkOrderArgs($goodsCars, $couponID, $agentID);
+        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
+        $this->checkPayEnable($payId);
+        $this->checkGoodsCarWork($goodsCars, $goodsCarIds);
+        $this->checkOrderArgs($goodsCars, $couponId, $agentId);
         try {
             app('db')->beginTransaction();
             // 更新购物车的状态
-            $goodsCarModel->updateStatus($user->id, $goodsCarIDs, 1);
+            $goodsCarModel->updateStatus($user->id, $goodsCarIds, 1);
             //更新商品的库存
             $goodsModel->modifyStock(array_column(obj2arr($goodsCars), 'goods_num', 'goods_id'), 'decrement');
+            //更新优惠券使用次数
+            if(!is_null($couponId)) {
+               $couponModel->modifyById($couponId);
+            }
             //创建订单
             $time = time();
             $combinePayId = Order::getCombinePayId($user->id, $payId);
@@ -114,13 +122,12 @@ class OrderController extends Controller
                 $orderDatas[] = [
                     'order_num' => $orderNum,
                     'pay_id' => $payId,
-                    'addr_id' => $addr->id,
+                    'addr_id' => $addrId,
                     'send_time' => mktime(0, 0, 0, date('m'), date('d')+1, date('Y')),
                     'time_space' => 3,
                     'send_price' => 0,
-                    'coupon_id' => $couponID,
+                    'coupon_id' => $couponId,
                     'pay_status' => 1,
-                    'pay_by' => 0,
                     'order_status' => 1,
                     'user_id' => $user->id,
                     'created_at' => $time,
@@ -159,32 +166,41 @@ class OrderController extends Controller
     /**
      * [检查订单参数是否合法]
      * @param  [type] $goodsCars [description]
-     * @param  [type] $couponID  [description]
-     * @param  [type] $agentID   [description]
+     * @param  [type] $couponId  [description]
+     * @param  [type] $agentId   [description]
      * @return [type]            [description]
      */
-    private function checkOrderArgs($goodsCars, $couponID, $agentID)
+    private function checkPayEnable($payId)
+    {
+        $paymentModel = new Payment();
+        if (!$paymentModel->payEnable($payId)) {
+            throw new ApiException(config('error.pay_not_work.msg'), config('error.pay_not_work.code'));
+        }
+    }
+    private function checkOrderArgs($goodsCars, $couponId, $agentId)
     {
         $couponModel = new Coupon();
         $agentModel = new Agent();
         $goodsModel = new Goods();
-        //检查优惠码是否有效
-        $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
-        if(!is_null($couponID) && !$couponModel->checkWork($couponID, 'id', $goodsIds)) {
-            throw new ApiException('无效的优惠码信息', config('error.not_work_coupon_exception.code'));
-        }
         //检查代理是否存在
-        if(!is_null($agentID) && !$agentModel->has($agentID)) {
-            throw new ApiException('无效的代理者', config('error.not_work_agent_exception.code'));
+        if (!is_null($agentId)) {
+            if (!$agentModel->has($agentId)) {
+                throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
+            }
+            //检查优惠码是否有效
+            $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
+            if (!is_null($couponId) && !$couponModel->checkWork($couponId, 'id', $goodsIds, $agentId)) {
+                throw new ApiException(config('error.not_work_coupon_exception.msg'), config('error.not_work_coupon_exception.code'));
+            }
         }
         //判断购物车是否有过期商品或商品库存是否足够
-        if(($abnormal = $goodsModel->isAbnormal($goodsCars)) !== false) {
+        if (($abnormal = $goodsModel->isAbnormal($goodsCars)) !== false) {
             throw new ApiException($abnormal['msg'], $abnormal['code']);
         }
     }
     private function checkGoodsCarWork($goodsCars, $goodsCarIds)
     {
-        if(count(obj2arr($goodsCars)) != count($goodsCarIds)) {
+        if (count(obj2arr($goodsCars)) != count($goodsCarIds)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
         return true;
@@ -199,12 +215,48 @@ class OrderController extends Controller
     {
         $rules = [
             'order_ids' => 'required|string',
+            'pay_id' => 'required|integer',
         ];
-        $this->validate($request, $rules);
-        $orderIds = $request->input('order_ids');
-        // $combinePayId = getCombinePayId($user->id);
-        // Order::mofifyCombinPayId($orderIds, $combinePayId);
+        $this->valIdate($request, $rules);
+        $orderModel = new Order();
+        $paymentModel = new Payment();
+        $orderIds = explode(',', $request->input('order_ids'));
+        array_pop($orderIds);
+        $payId = $request->input('pay_id');
+        $this->checkPayEnable($payId);
+        $orders = $orderModel->mgetPayOrderByIds($user->id, $orderIds);
+        //检查是否有无效的订单
+        if (count(obj2arr($orders)) != count($orderIds)) {
+            throw new ApiException(config('error.contain_order_not_work_exception.msg'), config('error.contain_order_not_work_exception.code'));
+        }
+        $combinePayId = Order::getCombinePayId($user->id, $payId);
+        $orderModel->modifyCombinePayId($orderIds, $combinePayId);
+        $this->pay($combinePayId, $user);
     }
+    protected function pay($combinePayId, $user)
+    {
+        $goodsIds = [];
+        $orderModel = new Order();
+        $goodsModel = new Goods();
+        $payModel = new Pay();
+        $orders = $orderModel->mgetByCombinePayId($combinePayId);
+        foreach ($orders as $order) {
+            $goodsIds[] = $order->goods_id;
+        }
+        $goodsIds = array_unique($goodsIds);
+        $goodses = $goodsModel->mgetByIds($goodsIds);
+        if (count(obj2arr($goodses)) != count($goodsIds)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
+        $goodsMap = getMap($goodses, 'id');
+        $all = 0;
+        foreach ($orders as $order) {
+            $goods = $goodsMap[$order->goods_id];
+            $all += $goods->price * $order->goods_num;
+        }
+        $payModel->pay($combinePayId, $all, $user->openid);
+    }
+
     /**
      * [删除订单]
      * @param  Request $request [Request实例]
@@ -226,24 +278,29 @@ class OrderController extends Controller
      * @param  Request $request [description]
      * @return [type]           [description]
      */
-    public function getClassesOrder(Request $request, $user)
+    public function index(Request $request, $user)
     {
+        $statuses = ['全部', '待付款', '待发货', '待收货'];
         $rules = [
-            'limit' => 'integer|max:100|min:10',
+            'limit' => 'integer|max:10|min:1',
             'page' => 'integer|min:1',
             'status' => 'integer|max:4|min:0'
         ];
-        $this->validate($request, $rules);
+        $this->valIdate($request, $rules);
         $rsp = config('response.items');
         $status = $request->input('status', 0);
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
         $orderModel = new Order();
         $orders = $orderModel->mget($user->id, $limit, $page, $status);
+        foreach ($statuses as $key => $value) {
+            $rsp['actives'][] = ['index' => $key, 'actived' => $status == $key ? true : false ];
+        }
         if(empty(obj2arr($orders))) {
             $rsp['status'] = 0;
             $rsp['items'] = [];
             $rsp['num'] = 0;
+            $rsp['msg'] = '您还没有此类型订单';
         } else {
             $rsp['status'] = 0;
             $rsp['items'] = $orderModel->getOrdersInfo($orders);
@@ -258,7 +315,7 @@ class OrderController extends Controller
      */
     protected function waitSend($orderIds, $userId)
     {
-        if(is_array($orderIds)) {
+        if (is_array($orderIds)) {
             (new Order())->mModifyByUser($orderIds, $userId, ['order_status' => 2, 'pay_status' => 2,'pay_time' => time()]);
         } else {
             (new Order())->modifyByUser($orderIds, $userId, ['order_status' => 2, 'pay_status' => 2, 'pay_time' => time()]);
@@ -293,7 +350,7 @@ class OrderController extends Controller
         $goodsModel = new Goods();
         $order = $orderModel->get($user->id, $orderId);
         $rsp = config('response.success');
-        if (!$orderModel->canPay($order)) {
+        if (!$orderModel->cancelable($order)) {
             return config('response.order_no_cancel');
         }
         try {
@@ -307,6 +364,11 @@ class OrderController extends Controller
                 app('db')->rollBack();
             }
         return $rsp;
+    }
+    public function getTypeCount($user)
+    {
+        $orderModel = new Order();
+        return $orderModel->getTypeCount($user->id);
     }
 }
 ?>

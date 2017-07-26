@@ -30,14 +30,14 @@ class OrderController extends Controller
         $rsp = config('response.success');
         $orderModel = new Order();
         if($request->has('start_time') && $request->has('end_time')) {
-            $rsp['status'] = 0;
+            $rsp['code'] = 0;
             $limit = $request->input('limit', 10);
             $page = $request->input('page', 1);
             $orders = $orderModel->getByTime($searchId, strtotime($request->input('start_time')), strtotime($request->input('end_time')), $limit, $page);
             $rsp['items'] = $orderModel->getOrdersInfo($orders);
             $rsp['num'] = count($rsp['items']);
         } else {
-            $rsp['status'] = 1;
+            $rsp['code'] = 1;
             $rsp['msg'] = '参数错误';
         }
         return $rsp;
@@ -101,11 +101,11 @@ class OrderController extends Controller
         $orderModel = new Order();
         $orders = $orderModel->mget($agent->id, $limit, $page, $status);
         if(empty(obj2arr($orders))) {
-            $rsp['status'] = 0;
+            $rsp['code'] = 0;
             $rsp['items'] = [];
             $rsp['num'] = 0;
         } else {
-            $rsp['status'] = 0;
+            $rsp['code'] = 0;
             $rsp['items'] = $orderModel->getOrdersInfo($orders);
             $rsp['num'] = count($rsp['items']);
         }

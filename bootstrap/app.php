@@ -30,7 +30,7 @@ $app->configure('response');
 
 // $app->withFacades();
 
-$app->configure('database');
+// $app->configure('database');
 $app->withFacades();
 // $app->withEloquent();
 

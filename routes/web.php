@@ -1,6 +1,7 @@
 <?php
 
 $app->get('/ping', 'PingController@ping');
+$app->get('/notify', 'PingController@notify');
 $app->get('check', 'UserController@check');
 $app->group(['prefix' => '/v1'], function () use ($app) {
     $app->post('/login', 'UserController@login');
@@ -10,12 +11,18 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         $app->group(['prefix' => '/order'], function() use ($app) {
             $app->post('/', 'OrderController@store');
             $app->get('/preOrder', 'OrderController@preOrder');
-            $app->get('/', 'OrderController@getClassesOrder');
-            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use($app){
+            $app->get('/', 'OrderController@index');
+            $app->get('/count', 'OrderController@getTypeCount');
+            $app->put('/combine', 'OrderController@combinePay');
+            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1, 11}'] ], function() use($app){
                 $app->get('/', 'OrderController@show');
                 $app->put('finish', 'OrderController@finishRecv');
                 $app->put('cancel', 'OrderController@cancel');
                 $app->patch('/', 'OrderController@delete');
+                //物流相关
+                $app->group(['prefix' => '/logistics'], function() use ($app) {
+                    $app->get('/', 'LogisticsController@getOrderTraces');
+                });
             });
         });
         //购物车相关
@@ -24,7 +31,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
             $app->get('/', 'GoodsCarController@index');
             $app->get('/all', 'GoodsCarController@getAll');
             $app->put('/', 'GoodsCarController@addLogistics');
-            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use ($app) {
+            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1, 11}'] ], function() use ($app) {
                 $app->put('/', 'GoodsCarController@update');
                 $app->patch('/', 'GoodsCarController@delete');
             });
@@ -33,10 +40,10 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         $app->group(['prefix' => '/address'], function() use ($app) {
             $app->post('/', 'AddressController@store');
             $app->get('/', 'AddressController@index');
-            $app->group(['prefix' => 'set/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use ($app) {
+            $app->group(['prefix' => 'set/{id}', 'where' => ['id' => '[0-9]{1, 11}'] ], function() use ($app) {
                  $app->put('/', 'AddressController@setDefault');
             });
-            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,16}'] ], function() use ($app) {
+            $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1, 11}'] ], function() use ($app) {
                 $app->get('/', 'AddressController@show');
                 $app->put('/', 'AddressController@update');
                 $app->patch('/', 'AddressController@delete');
@@ -45,15 +52,12 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         $app->group(['prefix' => 'coupon'], function() use ($app) {
             $app->get('/', 'CouponController@checkCode');
         });
-        //物流相关
-        $app->group(['prefix' => '/logistics'], function() use ($app) {
-            $app->get('/', 'LogisticsController@getOrderTraces');
-        });
+
 
     });
     $app->group(['prefix' => '/goods'], function() use ($app) {
         $app->get('/', 'GoodsController@index');
-        $app->group(['prefix' => '/{goods_id}', 'where' => ['goods_id' => '[0-9]{1,11}']], function () use ($app) {
+        $app->group(['prefix' => '/{goods_id}', 'where' => ['goods_id' => '[0-9]{1, 11}']], function () use ($app) {
             $app->get('/', 'GoodsController@show');
         });
     });

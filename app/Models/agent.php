@@ -51,7 +51,14 @@ class Agent extends Model
     }
     public function has($agentId)
     {
-        if(empty($agent = $this->get($agentId))) {
+        if(empty($agent = Dbagent::get(['where' => ['id' => $agentId] ]))) {
+            return false;
+        }
+        return true;
+    }
+    public function hasUsername($username)
+    {
+        if(empty($agent = Dbagent::get(['where' => ['username' => $username] ]))) {
             return false;
         }
         return true;
