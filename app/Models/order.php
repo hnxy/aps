@@ -364,14 +364,16 @@ class Order extends Model
     {
         $counts = [];
         foreach (self::orderStauts as $key => $value) {
-            if($value == 1) {
+            if ($value == 1) {
                 $counts[$key] = DbOrder::count(['where' => [
                         ['user_id', '=', $userId],
                         ['order_status', '=', $value],
-                        ['created_at', '>', time() - config('wx.order.order_work_time')],
+                        ['is_del', '=', 0],
+                        ['created_at', '>', time() - config('wx.order_work_time')],
                     ]]);
             } else {
                 $counts[$key] = DbOrder::count(['where' => [
+                        ['is_del', '=', 0],
                         ['user_id', '=', $userId],
                         ['order_status', '=', $value],
                     ]]);
@@ -450,12 +452,16 @@ class Order extends Model
         $arr['whereIn']['values'] = $orderIds;
         return DbOrder::mgetByOrderIds($arr);
     }
-    public static function modifyCombinePayId($orderIds, $combinePayId)
+    public function modifyCombinePayId($orderIds, $combinePayId)
     {
         $arr['whereIn']['key'] = 'id';
         $arr['whereIn']['values'] = $orderIds;
         $arr['update'] = ['combine_pay_id' => $combinePayId];
-        return DbOrder::modify($arr);
+        return DbOrder::mModify($arr);
+    }
+    public function mgetByCombinePayId($combinePayId)
+    {
+        return DbOrder::mgetByCombinePayId($combinePayId);
     }
 }
 ?>

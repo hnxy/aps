@@ -11,4 +11,13 @@ class PingController extends Controller
     {
         return 'ping is ok';
     }
+     /**
+     * [notify description]
+     * @return [type] [description]
+     */
+    public function notify()
+    {
+        $rsp = file_get_contents('php://input');
+        var_dump($rsp);
+    }
 }

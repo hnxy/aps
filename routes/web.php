@@ -1,6 +1,7 @@
 <?php
 
 $app->get('/ping', 'PingController@ping');
+$app->get('/notify', 'PingController@notify');
 $app->get('check', 'UserController@check');
 $app->group(['prefix' => '/v1'], function () use ($app) {
     $app->post('/login', 'UserController@login');
@@ -12,6 +13,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
             $app->get('/preOrder', 'OrderController@preOrder');
             $app->get('/', 'OrderController@index');
             $app->get('/count', 'OrderController@getTypeCount');
+            $app->put('/combine', 'OrderController@combinePay');
             $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1, 11}'] ], function() use($app){
                 $app->get('/', 'OrderController@show');
                 $app->put('finish', 'OrderController@finishRecv');

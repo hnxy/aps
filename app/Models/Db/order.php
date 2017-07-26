@@ -121,5 +121,11 @@ class Order extends Model
                         ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
                         ->get();
     }
+    public static function mgetByCombinePayId($combinePayId)
+    {
+        return app('db')->table(self::$model)
+                        ->where('combine_pay_id', $combinePayId)
+                        ->get();
+    }
 }
 ?>

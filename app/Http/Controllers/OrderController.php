@@ -15,6 +15,7 @@ use App\Exceptions\ApiException;
 use App\Models\User;
 use App\Models\Agent;
 use App\Models\Payment;
+use App\Models\Pay;
 
 class OrderController extends Controller
 {
@@ -219,18 +220,43 @@ class OrderController extends Controller
         $this->valIdate($request, $rules);
         $orderModel = new Order();
         $paymentModel = new Payment();
-        $orderIds = $request->input('order_ids');
+        $orderIds = explode(',', $request->input('order_ids'));
         array_pop($orderIds);
         $payId = $request->input('pay_id');
         $this->checkPayEnable($payId);
         $orders = $orderModel->mgetPayOrderByIds($user->id, $orderIds);
         //检查是否有无效的订单
-        if (count(obj2arr($orders) != count($orderIds))) {
-            throw new ApiException(config('error.contain_order_not_work.msg'), config('error.contain_order_not_work.code'));
+        if (count(obj2arr($orders)) != count($orderIds)) {
+            throw new ApiException(config('error.contain_order_not_work_exception.msg'), config('error.contain_order_not_work_exception.code'));
         }
-        $combinePayId = getCombinePayId($user->id, $payId);
+        $combinePayId = Order::getCombinePayId($user->id, $payId);
         $orderModel->modifyCombinePayId($orderIds, $combinePayId);
+        $this->pay($combinePayId, $user);
     }
+    protected function pay($combinePayId, $user)
+    {
+        $goodsIds = [];
+        $orderModel = new Order();
+        $goodsModel = new Goods();
+        $payModel = new Pay();
+        $orders = $orderModel->mgetByCombinePayId($combinePayId);
+        foreach ($orders as $order) {
+            $goodsIds[] = $order->goods_id;
+        }
+        $goodsIds = array_unique($goodsIds);
+        $goodses = $goodsModel->mgetByIds($goodsIds);
+        if (count(obj2arr($goodses)) != count($goodsIds)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
+        $goodsMap = getMap($goodses, 'id');
+        $all = 0;
+        foreach ($orders as $order) {
+            $goods = $goodsMap[$order->goods_id];
+            $all += $goods->price * $order->goods_num;
+        }
+        $payModel->pay($combinePayId, $all, $user->openid);
+    }
+
     /**
      * [删除订单]
      * @param  Request $request [Request实例]
@@ -256,7 +282,7 @@ class OrderController extends Controller
     {
         $statuses = ['全部', '待付款', '待发货', '待收货'];
         $rules = [
-            'limit' => 'integer|max:100|min:10',
+            'limit' => 'integer|max:10|min:1',
             'page' => 'integer|min:1',
             'status' => 'integer|max:4|min:0'
         ];
