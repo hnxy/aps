@@ -1,11 +1,13 @@
 <?php
 
 namespace App\Models;
+use App\Exceptions\ApiException;
 
 class Pay extends Model
 {
     public static $model = 'Pay';
-    protected function getSign($params)
+
+    public function getSign($params)
     {
         ksort($params, SORT_STRING);
         $signArr = '';
@@ -19,54 +21,79 @@ class Pay extends Model
     }
     public function pay($combinePayId, $all, $openid)
     {
+        $time = time();
         $params = [
             'appid' => config('wx.appid'),
             'mch_id' => config('wx.shopid'),
+            'device_info' => 'WEB',
             'nonce_str' => getRandomString(16),
             'body' => '玩乐广厦Uit-海鲜',
             'out_trade_no' => $combinePayId,
-            'total_fee' => $all * 100,
-            'spbill_create_ip' => '121.42.163.116',
-            'notify_url' => url('/notify'),
+            'total_fee' => 1,//支付金额，单位为分
+            'spbill_create_ip' => $_SERVER['REMOTE_ADDR'],
+            'notify_url' => url('/v1/order/recive'),
             'trade_type' => 'JSAPI',
             'openid' => $openid,
+            'time_start' => date('YmdHis', $time),
+            'time_expire' => date('YmdHis', $time + config('wx.order_work_time')),
+            'fee_type' => 'CNY',
+            'attach' => '长沙58',
+            'sign_type' => 'MD5',
         ];
         $sign = $this->getSign($params);
         $params['sign'] = $sign;
-        $XMLDATA = <<<DATA
-        <xml>
-           <appid>%s</appid>
-           <body>%s</body>
-           <mch_id>%s</mch_id>
-           <nonce_str>%s</nonce_str>
-           <notify_url>%s</notify_url>
-           <openid>%s</openid>
-           <out_trade_no>%s</out_trade_no>
-           <spbill_create_ip>%s</spbill_create_ip>
-           <total_fee>%s</total_fee>
-           <trade_type>%s</trade_type>
-           <sign>%s</sign>
-        </xml>
-DATA;
-        $XMLDATA = sprintf($XMLDATA, $params['appid'], $params['body'], $params['mch_id'], $params['nonce_str'],
-            $params['notify_url'],  $params['openid'], $params['out_trade_no'], $params['spbill_create_ip'],
-            $params['total_fee'], $params['trade_type'], $params['sign']
-            );
+        $XMLDATA = $this->buildXMLData($params);
+        $rsp = $this->sendXML($XMLDATA);
+        $rspArr = obj2arr(simplexml_load_string($rsp, 'SimpleXMLElement', LIBXML_NOCDATA));
+        if ($rspArr['return_code'] != 'SUCCESS') {
+            throw new ApiException($rspArr['return_msg'], config('wx.communicate_exception.code'));
+        }
+        if ($rspArr['result_code'] != 'SUCCESS') {
+            throw new ApiException($rspArr['err_code_des'], config('wx.transaction_exception.code'));
+        }
+        //获取支付签名
+        $paySignParams = [
+            'timeStamp' => $time,
+            'nonceStr' =>  $rspArr['nonce_str'],
+            'signType' => 'MD5',
+            'package' => 'prepay_id=' . $rspArr['prepay_id'],
+            'appId' => config('wx.appid'),
+        ];
+        $paySign = $this->getSign($paySignParams);
+        return [
+            'timestamp' => $time,
+            'nonce_str' => $rspArr['nonce_str'],
+            'trade_type' => $rspArr['trade_type'],
+            'prepay_id' => $rspArr['prepay_id'],
+            'paySign' => $paySign,
+        ];
+    }
+    protected function buildXMLData($params)
+    {
+        $XMLDATA = '<xml>';
+        foreach ($params as $key => $value) {
+            $XMLDATA .= "<{$key}>{$value}</{$key}>";
+        }
+        $XMLDATA .= '</xml>';
+        return $XMLDATA;
+    }
+    protected function sendXML($XMLDATA)
+    {
         $url = 'https://api.mch.weixin.qq.com/pay/unifiedorder';
         $headers = [
-            'Content-Type:text/xml'
+            'Content-Type:application/xml'
         ];
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HEADER, $headers);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $XMLDATA);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,false);
         $rsp = curl_exec($ch);
-        var_dump($rsp);
         curl_close($ch);
+        return $rsp;
     }
 }

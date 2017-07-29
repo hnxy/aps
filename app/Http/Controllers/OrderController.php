@@ -91,19 +91,24 @@ class OrderController extends Controller
         $addrId = $request->input('addr_id', null);
         $couponId = $request->input('coupon_id', null);
         $agentId = $request->input('agent_id', null);
-        $rsp = config('response.success');
         $orderModel = new Order();
         $addressModel = new Address();
         $goodsModel = new Goods();
         $goodsCarModel = new GoodsCar();
+        $couponModel = new Coupon();
         if (($addr = $this->hasAddr($user->id, $addrId)) === false) {
             return config('error.addr_null_err');
         }
         // 获取购物车的信息,该返回的数据为对象数组
         $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
+        //检查是否能够支付
         $this->checkPayEnable($payId);
+        //检查购物车信息是否正常
         $this->checkGoodsCarWork($goodsCars, $goodsCarIds);
-        $this->checkOrderArgs($goodsCars, $couponId, $agentId);
+        $this->checkOrderArgs($goodsCars, $agentId);
+        //检查优惠码是否可用
+        $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
+        $coupon = $this->checkCouponWork($couponId, $agentId, $goodsIds, $user->id);
         try {
             app('db')->beginTransaction();
             // 更新购物车的状态
@@ -111,7 +116,7 @@ class OrderController extends Controller
             //更新商品的库存
             $goodsModel->modifyStock(array_column(obj2arr($goodsCars), 'goods_num', 'goods_id'), 'decrement');
             //更新优惠券使用次数
-            if(!is_null($couponId)) {
+            if(!empty($coupon)) {
                $couponModel->modifyById($couponId);
             }
             //创建订单
@@ -119,14 +124,14 @@ class OrderController extends Controller
             $combinePayId = Order::getCombinePayId($user->id, $payId);
             foreach ($goodsCars as $goodsCar) {
                 $orderNum = $this->getOrderNum(16);
-                $orderDatas[] = [
+                $orderIds[] = $orderModel->create([
                     'order_num' => $orderNum,
                     'pay_id' => $payId,
-                    'addr_id' => $addrId,
+                    'addr_id' => $addr->id,
                     'send_time' => mktime(0, 0, 0, date('m'), date('d')+1, date('Y')),
                     'time_space' => 3,
                     'send_price' => 0,
-                    'coupon_id' => $couponId,
+                    'coupon_id' => !empty($coupon) && $coupon['goods_id'] == $goodsCar->goods_id ? $couponId : null,
                     'pay_status' => 1,
                     'order_status' => 1,
                     'user_id' => $user->id,
@@ -134,15 +139,14 @@ class OrderController extends Controller
                     'goods_id' => $goodsCar->goods_id,
                     'goods_num' => $goodsCar->goods_num,
                     'combine_pay_id' => $combinePayId,
-                ];
+                ]);
             }
-            $orderModel->create($orderDatas);
             app('db')->commit();
         } catch(Exceptions $e) {
             app('db')->rollBack();
         }
         //创建订单完成,跳转到支付
-        return  $rsp;
+        return  $orderIds;
     }
     /**
      * [判断地址是否存在]
@@ -163,21 +167,27 @@ class OrderController extends Controller
     {
         return getRandomString($len);
     }
-    /**
-     * [检查订单参数是否合法]
-     * @param  [type] $goodsCars [description]
-     * @param  [type] $couponId  [description]
-     * @param  [type] $agentId   [description]
-     * @return [type]            [description]
-     */
     private function checkPayEnable($payId)
     {
         $paymentModel = new Payment();
         if (!$paymentModel->payEnable($payId)) {
-            throw new ApiException(config('error.pay_not_work.msg'), config('error.pay_not_work.code'));
+            throw new ApiException(config('error.pay_not_work_exception.msg'), config('error.pay_not_work_exception.code'));
         }
     }
-    private function checkOrderArgs($goodsCars, $couponId, $agentId)
+    private function checkCouponWork($couponId, $agentId, $goodsIds, $userId)
+    {
+        //检查优惠码是否有效
+        $coupon = null;
+        $couponModel = new Coupon();
+        if (!is_null($couponId)) {
+            if (is_null($agentId) || !($coupon = $couponModel->checkWork($couponId, 'id', $goodsIds, $agentId, $userId))) {
+            throw new ApiException(config('error.not_work_coupon_exception.msg'), config('error.not_work_coupon_exception.code'));
+        }
+        }
+
+        return $coupon;
+    }
+    private function checkOrderArgs($goodsCars, $agentId)
     {
         $couponModel = new Coupon();
         $agentModel = new Agent();
@@ -186,11 +196,6 @@ class OrderController extends Controller
         if (!is_null($agentId)) {
             if (!$agentModel->has($agentId)) {
                 throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
-            }
-            //检查优惠码是否有效
-            $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
-            if (!is_null($couponId) && !$couponModel->checkWork($couponId, 'id', $goodsIds, $agentId)) {
-                throw new ApiException(config('error.not_work_coupon_exception.msg'), config('error.not_work_coupon_exception.code'));
             }
         }
         //判断购物车是否有过期商品或商品库存是否足够
@@ -218,6 +223,12 @@ class OrderController extends Controller
             'pay_id' => 'required|integer',
         ];
         $this->valIdate($request, $rules);
+        //检查版本是否支持支付
+        $userAgent = $request->header('user-agent');
+        preg_match('/[a-zA-Z]+?\/(\d+\.\d+)/i', $userAgent, $matchs);
+        if (floatval($matchs[1]) < 5.0) {
+            throw new ApiException(config('error.wx_version_low.msg'), config('error.wx_version_low.code'));
+        }
         $orderModel = new Order();
         $paymentModel = new Payment();
         $orderIds = explode(',', $request->input('order_ids'));
@@ -231,30 +242,26 @@ class OrderController extends Controller
         }
         $combinePayId = Order::getCombinePayId($user->id, $payId);
         $orderModel->modifyCombinePayId($orderIds, $combinePayId);
-        $this->pay($combinePayId, $user);
+        return $this->pay($combinePayId, $orders, $user);
     }
-    protected function pay($combinePayId, $user)
+    protected function pay($combinePayId, $orders, $user)
     {
         $goodsIds = [];
         $orderModel = new Order();
         $goodsModel = new Goods();
         $payModel = new Pay();
-        $orders = $orderModel->mgetByCombinePayId($combinePayId);
+        $couponModel = new Coupon();
         foreach ($orders as $order) {
             $goodsIds[] = $order->goods_id;
         }
         $goodsIds = array_unique($goodsIds);
         $goodses = $goodsModel->mgetByIds($goodsIds);
+        //防止商品被删
         if (count(obj2arr($goodses)) != count($goodsIds)) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
-        $goodsMap = getMap($goodses, 'id');
-        $all = 0;
-        foreach ($orders as $order) {
-            $goods = $goodsMap[$order->goods_id];
-            $all += $goods->price * $order->goods_num;
-        }
-        $payModel->pay($combinePayId, $all, $user->openid);
+        $all = $this->getAll($goodses, $orders);
+        return $payModel->pay($combinePayId, $all, $user->openid);
     }
 
     /**
@@ -296,7 +303,7 @@ class OrderController extends Controller
         foreach ($statuses as $key => $value) {
             $rsp['actives'][] = ['index' => $key, 'actived' => $status == $key ? true : false ];
         }
-        if(empty(obj2arr($orders))) {
+        if (empty(obj2arr($orders))) {
             $rsp['status'] = 0;
             $rsp['items'] = [];
             $rsp['num'] = 0;
@@ -313,13 +320,9 @@ class OrderController extends Controller
      * @param  Request $request [description]
      * @return [type]           [description]
      */
-    protected function waitSend($orderIds, $userId)
+    protected function waitSend(array $orderIds, $payTime, $transactionId)
     {
-        if (is_array($orderIds)) {
-            (new Order())->mModifyByUser($orderIds, $userId, ['order_status' => 2, 'pay_status' => 2,'pay_time' => time()]);
-        } else {
-            (new Order())->modifyByUser($orderIds, $userId, ['order_status' => 2, 'pay_status' => 2, 'pay_time' => time()]);
-        }
+        (new Order())->mModify($orderIds, ['order_status' => 2, 'pay_status' => 2,'pay_time' => $payTime, 'transaction_id' => $transactionId]);
     }
     /**
      * [完成收货]
@@ -369,6 +372,93 @@ class OrderController extends Controller
     {
         $orderModel = new Order();
         return $orderModel->getTypeCount($user->id);
+    }
+    public function recive()
+    {
+        $notify = file_get_contents('php://input');
+        // $fp = fopen('test', 'wb+');
+        // fwrite($fp, $notify);
+        // fclose($fp);
+        $notifyObj = obj2arr(simplexml_load_string($notify, 'SimpleXMLElement', LIBXML_NOCDATA));
+        // $notifyObj = obj2arr(simplexml_load_file('/MyApp/aps/public/test', 'SimpleXMLElement', LIBXML_NOCDATA));
+        if (array_key_exists("return_code", $notifyObj) &&  $notifyObj['return_code'] != 'SUCCESS') {
+            $this->reply('Fail', $notifyObj['return_msg']);
+            return ;
+        }
+        if (array_key_exists("result_code", $notifyObj) &&  $notifyObj['result_code'] != 'SUCCESS') {
+            $this->reply('Fail', $notifyObj['err_code_des']);
+            return ;
+        }
+        $orderModel = new Order();
+        $goodsModel = new Goods();
+        $payModel = new Pay();
+        $goodsIds = $orderIds = [];
+        $combinePayId = $notifyObj['out_trade_no'];
+        $orders = $orderModel->mgetByCombinePayId($combinePayId);
+        foreach ($orders as $order) {
+            $goodsIds[] = $order->goods_id;
+            $orderIds[] = $order->id;
+            $sign = $order->sign;
+            $transactionId = $order->transaction_id;
+        }
+        //若是已经处理,直接发送成功的信息
+        if ($transactionId == $notifyObj['transaction_id']) {
+            $this->reply('SUCCESS', 'OK');
+            return ;
+        }
+        $params = $notifyObj;
+        unset($params['sign']);
+        $sign = $payModel->getSign($params);
+        //检查签名sign
+        if ($sign !== $notifyObj['sign']) {
+            $this->reply('Fail', 'sign不一致');
+            return ;
+        }
+        $goodsIds = array_unique($goodsIds);
+        $goodses = $goodsModel->mgetByIds($goodsIds);
+        if (count(obj2arr($goodses)) != count($goodsIds)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
+        //获取总金额
+        $all = $this->getAll($goodses, $orders);
+        //这里要*100的测试先不乘
+        // if ($all * 100 != $notifyObj['total_fee']) {
+        //     $this->reply('Fail', '订单金额不一致');
+        //     return;
+        // }
+        $payTime = $notifyObj['time_end'];
+        $transactionId = $notifyObj['transaction_id'];
+        $this->waitSend($orderIds, $payTime, $transactionId);
+        $this->reply('SUCCESS', 'OK');
+    }
+    protected function getAll($goodses, $orders)
+    {
+        $couponModel = new Coupon();
+        $goodsMap = getMap($goodses, 'id');
+        //计算总金额
+        $all = 0;
+        foreach ($orders as $order) {
+            $goods = $goodsMap[$order->goods_id];
+            $all += $goods->price * $order->goods_num;
+            if (!is_null($order->coupon_id)) {
+                $coupon = $couponModel->getById($order->coupon_id);
+                //防止该优惠券已经删除
+                if (!empty($coupon)) {
+                    $all -= $coupon->price;
+                }
+            }
+        }
+        return $all;
+    }
+    protected function reply($status, $msg)
+    {
+        $replyInfo = <<<DATA
+        <xml>
+            <return_code><![CDATA[%s]]></return_code>
+            <return_msg><![CDATA[%s]]></return_msg>
+        </xml>
+DATA;
+        echo sprintf($replyInfo, $status, $msg);
     }
 }
 ?>

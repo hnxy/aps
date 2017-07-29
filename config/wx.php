@@ -15,5 +15,6 @@
         'express_offic_phone' => ['SF' => '0731-55820626'],
         'order_work_time' => 12*3600,//以秒为单位
         'max_goods_num' => 999,
+        'host' => 'http://aps.cg0.me',
     ]
 ?>

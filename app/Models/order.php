@@ -39,6 +39,17 @@ class Order extends Model
                 ['id', '=', $id],
             ]]);
     }
+    public function getByCouponId($userId, $couponId)
+    {
+        return DbOrder::get(['where' => [
+                ['user_id', '=', $userId],
+                ['coupon_id', '=', $couponId],
+            ]]);
+    }
+    public function getById($id)
+    {
+        return DbOrder::get(['where' => ['id' => $id]]);
+    }
     /**
      * [获取价格有关的信息]
      * @param  [Object] $goodsCars [购物车对象的集合]
@@ -56,7 +67,7 @@ class Order extends Model
             $goodsIds[] = $goodsCar->goods_id;
         }
         $goodsMap = $this->getGoodsMap($goodsIds);
-        if (empty($goodsMap)) {
+        if ($goodsMap === false) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
         foreach ($goodsCars as $goodsCar) {
@@ -87,7 +98,7 @@ class Order extends Model
         $goodsModel = new Goods();
         $goodses = $goodsModel->mgetByIds($goodsIds);
         if (count(obj2arr($goodses)) != count($goodsIds)) {
-            return [];
+            return false;
         }
         return getMap($goodses, 'id');
     }
@@ -139,7 +150,7 @@ class Order extends Model
         }
         $goodsIds = array_unique($goodsIds);
         $goodsMap = $this->getGoodsMap($goodsIds);
-        if (empty($goodsMap)) {
+        if ($goodsMap === false) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
         foreach ($orders as $order) {
@@ -381,25 +392,8 @@ class Order extends Model
         }
         return $counts;
     }
-    public function modifyByUser($orderId, $userId, $arr)
-    {
-        $uarr['where'] = [
-            ['id', '=', $orderId],
-            ['user_id', '=', $userId],
-        ];
-        $uarr['update'] = $arr;
-        return DbOrder::modify($uarr);
-    }
     public function mModify($orderIds, $arr)
     {
-        $uarr['whereIn']['key'] = 'id';
-        $uarr['whereIn']['values'] = $orderIds;
-        $uarr['update'] = $arr;
-        return DbOrder::mModify($uarr);
-    }
-    public function mModifyByUser($orderIds, $userId, $arr)
-    {
-        $uarr['where'] = ['user_id' => $userId];
         $uarr['whereIn']['key'] = 'id';
         $uarr['whereIn']['values'] = $orderIds;
         $uarr['update'] = $arr;
@@ -440,6 +434,15 @@ class Order extends Model
         $uarr['update'] = $arr;
         return DbOrder::modify($uarr);
     }
+    public function modifyByUser($orderId, $userId, $arr)
+    {
+        $uarr['where'] = [
+            ['id', '=', $orderId],
+            ['user_id', '=', $userId],
+        ];
+        $uarr['update'] = $arr;
+        return DbOrder::modify($uarr);
+    }
     public function mgetPayOrderByIds($userId, $orderIds)
     {
         $arr['where'] = [
@@ -462,6 +465,22 @@ class Order extends Model
     public function mgetByCombinePayId($combinePayId)
     {
         return DbOrder::mgetByCombinePayId($combinePayId);
+    }
+    public function modifyByCombinePayId($combinePayId, $arr)
+    {
+        $uarr['where'] = ['combine_pay_id' => $combinePayId];
+        $uarr['update'] = $arr;
+        return DbOrder::modify($uarr);
+    }
+    public function mgetUnsendByIds($orderIds)
+    {
+        $arr['where'] = [
+            ['order_status', '=', 2],
+            ['is_del', '=', 0],
+        ];
+        $arr['whereIn']['key'] = 'id';
+        $arr['whereIn']['values'] = $orderIds;
+        return DbOrder::mgetByOrderIds($arr);
     }
 }
 ?>

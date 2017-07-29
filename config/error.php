@@ -18,5 +18,11 @@
         'goods_empty_exception' => ['msg' => '该商品不存在', 'code' => 16],
         'contain_order_not_work_exception' => ['msg' => '包含无效的订单', 'code' => 17],
         'goods_info_exception' => ['msg' => '商品信息异常', 'code' => 18],
+        'communicate_exception' => ['msg' => '商品信息异常', 'code' => 19],
+        'transaction_exception' => ['msg' => '商品信息异常', 'code' => 20],
+        'get_ticket_fail' => ['msg' => '获取js_ticket失败', 'code' => 21],
+        'wx_version_low' => ['msg' => '您的微信版本过低,暂不能支付', 'code' => 22],
+        'notify_fail' => ['msg' => '通知失败', 'code' => 23],
+        'coupon_has_been_used_exception' => ['msg' => '您已使用过该优惠券', 'code' => 24],
     ];
 ?>

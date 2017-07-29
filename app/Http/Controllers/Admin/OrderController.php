@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Goods;
 use App\Models\Agent;
 use App\Models\Order;
+use App\Models\Wx;
 use App\Models\GoodsCar;
+use App\Execptions\ApiException;
 use App\Http\Controllers\Controller;
 
 class OrderController extends Controller
@@ -42,6 +44,13 @@ class OrderController extends Controller
         }
         return $rsp;
     }
+    /**
+     * [获取某个订单]
+     * @param  Request $request [description]
+     * @param  [type]  $agent   [description]
+     * @param  [type]  $orderId [description]
+     * @return [type]           [description]
+     */
     public function show(Request $request, $agent, $orderId)
     {
         $rules = [
@@ -56,6 +65,10 @@ class OrderController extends Controller
         }
         return $orderModel->getOrderInfo($order, $order->coupon_id);
     }
+    /**
+     * [添加物流号]
+     * @param Request $request [description]
+     */
     public  function addLogistics(Request $request)
     {
         $rules = [
@@ -65,19 +78,18 @@ class OrderController extends Controller
         ];
         $this->validate($request, $rules);
         $rsp = config('response.success');
+        $orderModel = new Order();
         $orderIds = explode(',', $request->input('order_ids'));
         array_pop($orderIds);
+        $orders = $orderModel->mgetUnsendByIds($orderIds);
+        //检查订单是否有效
+        if (count(obj2arr($orders)) != count($orderIds)) {
+            throw new ApiException(config('error.contain_order_not_work_exception.msg'), config('error.contain_order_not_work_exception.code'));
+        }
         $upDatas = $request->only(['logistics_code', 'express_id']);
-        $orderModel = new Order();
         //更新状态为3
         $upDatas['order_status'] = 3;
-        try{
-            app('db')->beginTransaction();
-            $orderModel->addLogistics($orderIds, $upDatas);
-            app('db')->commit();
-        } catch(Exceptions $e) {
-            app('db')->rollback();
-        }
+        $orderModel->addLogistics($orderIds, $upDatas);
         return $rsp;
     }
     /**
@@ -89,7 +101,7 @@ class OrderController extends Controller
     public function getClassesOrder(Request $request, $agent)
     {
         $rules = [
-            'limit' => 'integer|max:100|min:10',
+            'limit' => 'integer|max:10|min:1',
             'page' => 'integer|min:1',
             'status' => 'required|integer'
         ];
@@ -110,5 +122,18 @@ class OrderController extends Controller
             $rsp['num'] = count($rsp['items']);
         }
         return $rsp;
+    }
+    public function queryOrderFromWx(Request $request)
+    {
+        $rules = [
+            'order_id' => 'required|integer',
+        ];
+        $this->validate($rules, $request);
+        $orderId = $request->input('order_id');
+        $order = $orderModel->getById($orderId);
+        $wxModel = new Wx();
+        if (!is_null($order->transaction_id)) {
+            $wxModel->queryByWx('transaction_id', $order->transaction_id);
+        }
     }
 }

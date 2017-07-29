@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 class Order extends Model
 {
     private static $model = 'order';
-    const orderStauts = [
+    const orderStatus = [
         'WAIT_PAY' => 1,
         'WAIT_SEND' => 2,
         'WAIT_RECV' => 3,
@@ -22,7 +22,7 @@ class Order extends Model
     public static function create($orderMsg)
     {
         return app('db')->table(self::$model)
-                        ->insert($orderMsg);
+                        ->insertGetId($orderMsg);
     }
     /**
      * [根据订单ID获取订单]

@@ -4,5 +4,11 @@ install:
 build:
 	composer install -vvv
 
-test:
+test_code:
+	./vendor/bin/phpcs app/ --standard=PSR2
+
+test:test_code
 	./vendor/bin/phpunit
+
+fix:
+	./vendor/bin/phpcbf app/Http/ --standard=PSR2

@@ -63,18 +63,18 @@
         if (strtolower($method) == 'post') {
             curl_setopt($ch, CURLOPT_POST, true);
         }
-        curl_setopt($ch,CURLOPT_URL,$url);
-        curl_setopt($ch,CURLOPT_HEADER,0);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-        curl_setopt($ch,CURLOPT_TIMEOUT,10);
-        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         $resText = curl_exec($ch);
         if (curl_errno($ch)) {
             curl_close($ch);
             return curl_error($ch);
         } else {
             curl_close($ch);
-            return json_decode($resText,true);
+            return json_decode($resText, true);
         }
     }
 

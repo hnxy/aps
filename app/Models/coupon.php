@@ -19,11 +19,15 @@ class Coupon extends Model
         return DbCoupon::get(['where' => [
                             ['goods_id', '=', $goodsId],
                             ['agent_id', '=', $agentId],
+                            ['is_del', '=', 0],
                         ]]);
     }
     public function getItems($agentId, $limit, $page)
     {
-        $arr['where'] = ['agent_id' => $agentId];
+        $arr['where'] = [
+            ['agent_id', '=', $agentId],
+            ['is_del', '=', 0],
+        ];
         $arr['limit'] = $limit;
         $arr['page'] = $page;
         $coupons = DbCoupon::mget($arr);
@@ -58,6 +62,7 @@ class Coupon extends Model
                                     [$key, '=', $value],
                                     ['expired', '>', time()],
                                     ['agent_id', '=', $agentId],
+                                    ['is_del', '=', 0],
                             ],
                             'whereColumn' => [
                                 ['times', '<', 'all_times']
@@ -70,14 +75,16 @@ class Coupon extends Model
      * @param  [String] $key   [字段名]
      * @return [Object]        [包含该优惠券ID信息的对象]
      */
-    public  function checkWork($value, $key, $goodsIds, $agentId) {
+    public  function checkWork($value, $key, $goodsIds, $agentId, $userId) {
         if(is_null($value)) {
             return [];
         }
         $result = $this->validate($value, $key, $agentId);
         if(!empty($result) && in_array($result->goods_id, $goodsIds)) {
+            $this->isUsed($result->id, $userId);
             return [
                 'id' => $result->id,
+                'goods_id' => $result->goods_id,
                 'code' => $result->code,
                 'price' => $result->price,
             ];
@@ -91,7 +98,10 @@ class Coupon extends Model
     }
     public function has($goodsId)
     {
-        $coupon = DbCoupon::get(['where' => ['goods_id' => $goodsId] ]);
+        $coupon = DbCoupon::get(['where' => [
+                ['goods_id', '=', $goodsId],
+                ['is_del', '=', 0],
+            ]]);
         if(!empty($coupon)) {
             return true;
         }
@@ -99,24 +109,30 @@ class Coupon extends Model
     }
     public function modifyByGoodsId($goodsId, $arr)
     {
-        $uarr['where'] = ['goods_id' => $goodsId];
+        $uarr['where'] = [
+            ['goods_id', '=', $goodsId],
+            ['is_del', '=', 0],
+        ];
         $uarr['update'] = $arr;
         return DbCoupon::modify($uarr);
     }
-    public function remove($id)
+    public function remove($agentId, $couponId)
     {
-        return DbCoupon::remove($id);
+        return DbCoupon::remove(['where' => [
+                ['agent_id', '=', $agentId],
+                ['id', '=', $couponId],
+            ]]);
     }
     public function getById($id)
     {
         return DbCoupon::get(['where' => ['id' => $id] ]);
     }
-    public function couponValidate($goodsCars, $code, $agentId)
+    public function couponValidate($goodsCars, $code, $agentId, $userId)
     {
         $allPrice = 0;
         $goodsModel = new Goods();
         $goods = getMap($goodsCars, 'goods_id');
-        if($coupon = $this->checkWork($code, 'code', array_keys($goods), $agentId)) {
+        if($coupon = $this->checkWork($code, 'code', array_keys($goods), $agentId, $userId)) {
             $allPrice = (-1)*$coupon['price'];
             $goodses = $goodsModel->mgetByIds(array_keys($goods));
             if (count(obj2arr($goodses)) != count(array_keys($goods))) {
@@ -128,6 +144,14 @@ class Coupon extends Model
             $coupon['all_price'] = sprintf('%0.2f', $allPrice);
         }
         return $coupon;
+    }
+    protected function isUsed($couponId, $userId)
+    {
+        $orderModel = new Order();
+        $order = $orderModel->getByCouponId($userId, $couponId);
+        if (!empty($order)) {
+            throw new ApiException(config('error.coupon_has_been_used_exception.msg'), config('error.coupon_has_been_used_exception.code'));
+        }
     }
 }
 

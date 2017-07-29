@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Models\Goods;
-use App\Models\Agent;
 use App\Http\Controllers\Controller;
 
 class GoodsController extends Controller
@@ -41,8 +40,7 @@ class GoodsController extends Controller
         $goodsInfo['end_time'] = strtotime($goodsInfo['end_time']);
         $goodsInfo['send_time'] = strtotime($goodsInfo['send_time']);
         $goodsInfo['create_time'] = time();
-        if($goodsModel->add($goodsInfo)) {
-            return config('response.success');
-        }
+        $goodsModel->add($goodsInfo);
+        return config('response.success');
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Agent;
 
 use Illuminate\Http\Request;
 use App\Models\Coupon;
@@ -25,7 +25,7 @@ class CouponController extends Controller
         $page = $request->input('page', 1);
         $id = $request->input('search');
         $couponModel = new Coupon();
-        $rsp = config('wx.addr');
+        $rsp = config('response.items');
         $rsp['items'] = $couponModel->getItems($id, $limit, $page);
         $rsp['num'] = count($rsp['items']);
         return $rsp;
@@ -64,7 +64,7 @@ class CouponController extends Controller
                 'code' => $code,
                 'created_at' => $time,
                 'start_time' => $startTime,
-                'expired' => $startTime+$request->input('expired_day')*24*3600,
+                'expired' => $startTime + $request->input('expired_day')*24*3600,
                 'all_times' => $request->input('all_times'),
             ]);
         }
@@ -78,11 +78,7 @@ class CouponController extends Controller
      */
     public function delete(Request $request, $agent, $couponId)
     {
-        $rsp = config('response.success');
-        if(!(new Coupon())->remove($agent->id, $couponId)) {
-            $rsp['status'] = 1;
-            $rsp['msg'] = '删除优惠券失败';
-        }
-        return $rsp;
+        (new Coupon())->remove($agent->id, $couponId);
+        return config('response.success');
     }
 }

@@ -82,7 +82,8 @@ class UserController extends Controller
     */
     public function login3(Request $request)
     {
-        $callbackUrl = url('v1/login3_callback?my_callback='.$request->input('my_callback', config('wx.index')));
+        $myCallback = $request->input('my_callback', config('wx.index'));
+        $callbackUrl = url('v1/login3_callback?my_callback=' . urlencode($myCallback));
         $params = array(
             'appid'=> config('wx.appid'),
             'redirect_uri' => $callbackUrl,
@@ -136,7 +137,12 @@ class UserController extends Controller
             'uid' => $userInfo->id,
             'headimgurl' => $userInfo->headimgurl,
         ];
-        return redirect($callback.'?'.http_build_query($params));
+        if (strpos($callback, '?') === false) {
+            return redirect($callback . '?' . http_build_query($params));
+        } else {
+            return redirect($callback . '&' . http_build_query($params));
+        }
+
     }
 }
 ?>

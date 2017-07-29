@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Agent;
 
 use Illuminate\Http\Request;
 use App\Exceptions\ApiException;
@@ -11,7 +11,7 @@ use App\Http\Controllers\Controller;
 class UserController extends Controller
 {
     /**
-     * [添加一级代理]
+     * [addAgent description]
      * @param Request $request [description]
      */
     public function store(Request $request)
@@ -34,7 +34,6 @@ class UserController extends Controller
         $AgentArr['passwd'] = password_hash($AgentArr['passwd'], PASSWORD_DEFAULT);
         $agentModel->add($AgentArr);
         return config('response.success');
-
     }
     public function login(Request $request)
     {

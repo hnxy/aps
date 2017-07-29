@@ -47,13 +47,11 @@ class Coupon extends Model
                         ->where($arr['where'])
                         ->update($arr['update']);
     }
-    public static function remove($id)
+    public static function remove($arr)
     {
         return app('db')->table(self::$model)
-                        ->where([
-                            ['id', '=', $id]
-                        ])
-                        ->delete();
+                        ->where($arr['where'])
+                        ->update(['is_del' => 1]);
     }
 }
 
