@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Wx;
+use App\Models\Agent;
 use App\Exceptions\ApiException;
 
 class UserController extends Controller
@@ -32,7 +33,7 @@ class UserController extends Controller
         $userModel = new User();
         $user = $userModel->login($userArr);
         if (empty($user)) {
-            throw new ApiException("账号或密码错误", 1);
+            throw new ApiException(config('error.u_p_error.msg'), config('error.u_p_error.code'));
         }
         return $user;
     }
@@ -43,6 +44,7 @@ class UserController extends Controller
      */
     public static function get(Request $request, $user)
     {
+        header('Content-Type:applicate/json');
         return $user;
     }
 
@@ -82,8 +84,22 @@ class UserController extends Controller
     */
     public function login3(Request $request)
     {
-        $myCallback = $request->input('my_callback', config('wx.index'));
-        $callbackUrl = url('v1/login3_callback?my_callback=' . urlencode($myCallback));
+
+        // $urlArr = parse_url($myCallback);
+        // if (!in_array($urlArr['host'], config('wx.host'))) {
+        //     throw new ApiException(config('error.callback_illegal.msg'), config('error.callback_illegal.code'));
+        // }
+        if ($request->has('agent_id')) {
+            $agentId = $request->input('agent_id');
+            $agentModel = new Agent();
+            if (!$agentModel->has($agentId)) {
+                throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
+            }
+            $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?agent_id=' . urlencode($agentId);
+        } else {
+            $myCallback = $request->input('my_callback', config('wx.index'));
+            $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?my_callback=' . urlencode($myCallback);
+        }
         $params = array(
             'appid'=> config('wx.appid'),
             'redirect_uri' => $callbackUrl,
@@ -98,12 +114,11 @@ class UserController extends Controller
      * [用户同意授权后的回调函数]
      * @param  Request $request [注入Request实例]
      */
-    public  function login3Callback(Request $request)
+    public function login3Callback(Request $request)
     {
         $wx = new Wx();
         $user = new User();
         $code = $request->input('code');
-        $callback = $request->input('my_callback');
         //判断该code是否存在
         if(($userInfo = $user->hasCode($code)) === false) {
             //不存在就通过该code获取access_token
@@ -132,17 +147,43 @@ class UserController extends Controller
             $userMsg['refresh_token'] = $userInfo->refresh_token;
         }
         $userInfo = $user->loginBy3($userMsg);
+        //有代理id
+        if ($request->has('agent_id')) {
+            $agentModel = new Agent();
+            if (($agent = $agentModel->hasApply($userInfo->id)) !== false) {
+                if ($agent->review == 0) {
+                    throw new ApiException(config('error.agent_has_apply.msg'), config('error.agent_has_apply.code'));
+                } else if ($agent->review == 1) {
+                    throw new ApiException(config('error.is_agent.msg'), config('error.is_agent.code'));
+                }
+            }
+            $agentId = $request->input('agent_id');
+            return $this->resolveAgent($userInfo, $agentId);
+        }
+        $callback = $request->input('my_callback');
+        return $this->resolveUser($userInfo, $callback);
+    }
+    protected function resolveUser($userInfo, $callback)
+    {
         $params = [
             'token' => $userInfo->token,
             'uid' => $userInfo->id,
-            'headimgurl' => $userInfo->headimgurl,
         ];
-        if (strpos($callback, '?') === false) {
+        $callbackArr = explode('#', $callback);
+        if (strpos($callbackArr[1], '?') === false) {
             return redirect($callback . '?' . http_build_query($params));
         } else {
             return redirect($callback . '&' . http_build_query($params));
         }
-
+    }
+    protected function resolveAgent($userInfo, $agentId)
+    {
+        $agentModel = new Agent();
+        $agentModel->add([
+            'user_id' => $userInfo->id,
+            'created_by' => $agentId,
+            ]);
+        return config('error.success');
     }
 }
 ?>

@@ -22,7 +22,7 @@ class Order extends Model
     public static function create($orderMsg)
     {
         return app('db')->table(self::$model)
-                        ->insertGetId($orderMsg);
+                        ->insert($orderMsg);
     }
     /**
      * [根据订单ID获取订单]
@@ -79,16 +79,15 @@ class Order extends Model
                         ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
                         ->update($arr['update']);
     }
-    public static function getByAgentId($agentId, $id)
+    public static function getByAgentId($agentId, $orderNum)
     {
         return app('db')->table(self::$model)
                         ->where([
                             ['agent_id', '=', $agentId],
-                            ['id', '=', $id],
+                            ['order_num', '=', $orderNum],
                             ['is_del', '=', 0],
                         ])
                         ->whereIn('order_status', [self::orderStatus['WAIT_SEND'], self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']])
-                        ->orderBy('created_at','desc')
                         ->first();
     }
     /**
@@ -125,6 +124,30 @@ class Order extends Model
     {
         return app('db')->table(self::$model)
                         ->where('combine_pay_id', $combinePayId)
+                        ->get();
+    }
+    public static function all($arr)
+    {
+        if (isset($arr['whereIn'])) {
+            return app('db')->table(self::$model)
+                            ->where(isset($arr['where']) ? $arr['where'] : [])
+                            ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
+                            ->count('id');
+        }
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->count('id');
+    }
+    public static function getTrade($agentId, $start, $end)
+    {
+        return app('db')->table(self::$model)
+                        ->where([
+                            ['agent_id', '=', $agentId],
+                        ])
+                        ->select(app('db')->raw('count(id) as totel, FROM_UNIXTIME(created_at, "%m-%d") as day'))
+                        ->whereBetween('created_at', [$start, $end])
+                        ->whereIn('order_status', [self::orderStatus['WAIT_SEND'], self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']])
+                        ->groupBy(app('db')->raw('FROM_UNIXTIME(created_at, "%Y-%m-%d")'))
                         ->get();
     }
 }

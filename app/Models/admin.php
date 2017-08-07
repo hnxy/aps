@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\Db\Agent as DbAgent;
+use App\Models\Db\Admin as DbAdmin;
 use App\Exceptions\ApiException;
 
-class Agent extends Model
+class Admin extends Model
 {
-    public static $model = 'Agent';
+    public static $model = 'Admin';
 
     public function get($id)
     {
@@ -17,12 +17,11 @@ class Agent extends Model
 
     public function add($arr)
     {
-        return DbAgent::add($arr);
+        return DbAdmin::add($arr);
     }
-    public function mget($agentId)
+    public function mget()
     {
-        $arr['where'] = ['agent_id' => $agentId];
-        return DbAgent::mget($arr);
+        return DbAdmin::mget();
     }
      /**
      * [login description]
@@ -33,7 +32,7 @@ class Agent extends Model
      */
     public function login($userArr)
     {
-        $user = DbAgent::get(['where' => ['username' => $userArr['username']] ]);
+        $user = DbAdmin::get(['where' => ['username' => $userArr['username']] ]);
         if (empty($user)) {
             throw new ApiException("此用户不存在", 2);
         }
@@ -52,19 +51,19 @@ class Agent extends Model
             'user_agent' => $userArr['user_agent'],
             'last_ip' => $userArr['last_ip'],
             ];
-        DbAgent::update($arr);
+        DbAdmin::update($arr);
         return ['id' => $user->id, 'token' => $token]   ;
     }
     public function has($agentId)
     {
-        if(empty($agent = Dbagent::get(['where' => ['id' => $agentId] ]))) {
+        if(empty($admin = DbAdmin::get(['where' => ['id' => $adminId] ]))) {
             return false;
         }
         return true;
     }
     public function hasUsername($username)
     {
-        if (empty($agent = Dbagent::get(['where' => ['username' => $username] ]))) {
+        if (empty($admin = DbAdmin::get(['where' => ['username' => $username] ]))) {
             return false;
         }
         return true;
@@ -74,10 +73,10 @@ class Agent extends Model
         $arr['where'] = [
             ['user_id', '=', $userId],
         ];
-        if (empty($agent = Dbagent::get($arr))) {
+        if (empty($admin = DbAdmin::get($arr))) {
             return false;
         }
-        return $agent;
+        return $admin;
     }
 }
 

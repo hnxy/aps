@@ -23,7 +23,7 @@ class Address extends Model
      * @return [Array]         [完整地址信息的数组]
      */
     public function getFullAddr($addrDetail) {
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         // 根据获取的地址的详细信息来获取省,市,县区的名称
         $provinceName = (new Province())->get($addrDetail->province_id)->name;
         $cityName = (new City())->get($addrDetail->city_id)->name;

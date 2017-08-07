@@ -11,7 +11,7 @@ use App\Models\Db\Order as DbOrder;
 class Order extends Model
 {
     public static $model = 'Order';
-    const orderStauts = [
+    const orderStatus = [
         'WAIT_PAY' => 1,
         'WAIT_SEND' => 2,
         'WAIT_RECV' => 3,
@@ -57,7 +57,8 @@ class Order extends Model
      * @param  string $key       [字段名称]
      * @return [Array]            [价格有关的信息]
      */
-    public function getPrice($goodsCars) {
+    public function getPrice($goodsCars)
+    {
         $priceInfos = $goodsIds = $goodsCarInfos = [];
         $allPrice = 0;
         $time = time();
@@ -72,10 +73,10 @@ class Order extends Model
         }
         foreach ($goodsCars as $goodsCar) {
             $goodsInfo = $goodsMap[$goodsCar->goods_id];
-            $currentPrice = sprintf('%.2f', $goodsInfo->price*$goodsCar->goods_num);
+            $currentPrice = sprintf('%.2f', $goodsInfo->price * $goodsCar->goods_num);
             $allPrice += $currentPrice;
             $goodsCarInfo = $this->formatGoods($goodsCar, $goodsInfo);
-            $goodsCarInfo['value'] = '￥'.$currentPrice;
+            $goodsCarInfo['value'] = '￥' . $currentPrice;
             $goodsCarInfo['goods_car_id'] = $goodsCar->id;
             $goodsCarInfos[] = $goodsCarInfo;
             $sendTime = min($sendTime, $goodsInfo->send_time);
@@ -83,7 +84,7 @@ class Order extends Model
         }
         $allPrice = sprintf('%.2f', $allPrice);
         $priceInfos[] = ['name' => '配送费', 'value' => '￥00.00'];
-        $priceInfos[] =  ['name' => '订单总价格', 'value' => '￥'.$allPrice];
+        $priceInfos[] =  ['name' => '订单总价格', 'value' => '￥' . $allPrice];
         $priceInfos[] = ['name' => '优惠金额', 'value' => '￥00.00'];
         $sendTime = formatY($sendTime);
         return [
@@ -142,7 +143,7 @@ class Order extends Model
     }
     public function getOrdersInfo($orders)
     {
-        $orderInfos = $otherInfo = $goodsIds = $goodsIds = [];
+        $orderInfos = $otherInfo = $goodsIds = [];
         $time = time();
         //获取商品id,同时获取商品于id之间的映射
         foreach ($orders as $order) {
@@ -160,7 +161,7 @@ class Order extends Model
             $orderInfo = $this->formatOrder($order);
             $goodsInfo = $this->formatGoods($order, $goods);
             $express = $this->getExpress($order->express_id);
-            $allPrice = $this->getAllPriceByCouponId($order->coupon_id, $allPrice);
+            $allPrice = $this->getAllPriceByCouponId($order->coupon_id, $allPrice)['allPrice'];
             $goodsInfo['value'] = '￥'.$allPrice;
             $sendPrice = sprintf('%.2f', $order->send_price);
             $sendTime = formatTime($goods->send_time);
@@ -181,11 +182,14 @@ class Order extends Model
     }
     protected function getAllPriceByCouponId($couponId, $allPrice)
     {
+        $coupon = null;
         if(!is_null($couponId)) {
             $coupon = (new Coupon())->getById($couponId);
-            $allPrice -= $coupon->price;
+            if (!empty($coupon)) {
+                $allPrice -= $coupon->price;
+            }
         }
-        return sprintf('%.2f', $allPrice);
+        return ['allPrice' => sprintf('%.2f', $allPrice), 'coupon' => $coupon];
     }
     protected function formatGoods($order, $goods)
     {
@@ -235,7 +239,7 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if ($order->order_status == self::orderStauts['WAIT_SEND']) {
+        if ($order->order_status == self::orderStatus['WAIT_SEND']) {
             return true;
         }
         return false;
@@ -249,7 +253,7 @@ class Order extends Model
         if ($order->created_at + $expired < time() ) {
             return false;
         }
-        if ($order->order_status == self::orderStauts['WAIT_PAY'] ) {
+        if ($order->order_status == self::orderStatus['WAIT_PAY'] ) {
             return true;
         }
         return false;
@@ -263,7 +267,7 @@ class Order extends Model
         if ($order->created_at + $expired < time()) {
             return false;
         }
-        if ($order->order_status == self::orderStauts['WAIT_PAY']) {
+        if ($order->order_status == self::orderStatus['WAIT_PAY']) {
             return true;
         }
         return false;
@@ -273,7 +277,8 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if (in_array($order->order_status, [self::orderStauts['IS_FINISH'], self::orderStauts['IS_CANCEL']])) {
+        $expired = config('wx.order_work_time');
+        if (in_array($order->order_status, [self::orderStatus['IS_FINISH'], self::orderStatus['IS_CANCEL']]) || ($order->order_status == 1 && $order->created_at + $expired < time())) {
             return true;
         }
         return false;
@@ -286,7 +291,7 @@ class Order extends Model
         if (is_null($order->logistics_code)) {
             return false;
         }
-        if ($order->order_status == self::orderStauts['WAIT_RECV']) {
+        if ($order->order_status == self::orderStatus['WAIT_RECV']) {
             return true;
         }
         return false;
@@ -296,7 +301,7 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if (in_array($order->order_status, [self::orderStauts['WAIT_RECV'], self::orderStauts['IS_FINISH']])) {
+        if (in_array($order->order_status, [self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']])) {
             return true;
         }
         return false;
@@ -306,7 +311,7 @@ class Order extends Model
         if (!$this->isExist($order)) {
             return false;
         }
-        if ($order->order_status == self::orderStauts['IS_FINISH']) {
+        if ($order->order_status == self::orderStatus['IS_FINISH']) {
             return true;
         }
         return false;
@@ -354,7 +359,7 @@ class Order extends Model
         if (is_null($goodsInfo)) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
-        $allPrice = $this->getAllPriceByCouponId(null, $goodsInfo->price*$order->goods_num);
+        $allPrice = $this->getAllPriceByCouponId($order->coupon_id, $goodsInfo->price*$order->goods_num)['allPrice'];
         $sendTime = formatY($goodsInfo->send_time);
         $express = $this->getExpress($order->express_id);
         //支付相关
@@ -374,7 +379,7 @@ class Order extends Model
     public function getTypeCount($userId)
     {
         $counts = [];
-        foreach (self::orderStauts as $key => $value) {
+        foreach (self::orderStatus as $key => $value) {
             if ($value == 1) {
                 $counts[$key] = DbOrder::count(['where' => [
                         ['user_id', '=', $userId],
@@ -399,9 +404,9 @@ class Order extends Model
         $uarr['update'] = $arr;
         return DbOrder::mModify($uarr);
     }
-    public function getByAgentId($agentId, $id)
+    public function getByAgentId($agentId, $orderNum)
     {
-        return DbOrder::getByAgentId($agentId, $id);
+        return DbOrder::getByAgentId($agentId, $orderNum);
     }
     /**
      * [getByTime description]
@@ -481,6 +486,74 @@ class Order extends Model
         $arr['whereIn']['key'] = 'id';
         $arr['whereIn']['values'] = $orderIds;
         return DbOrder::mgetByOrderIds($arr);
+    }
+    public function getOrdersInfoByAgent($orders)
+    {
+        $paymentModel = new Payment();
+        $orderInfos = $goodsIds = [];
+        //获取商品id,同时获取商品于id之间的映射
+        foreach ($orders as $order) {
+            $goodsIds[] = $order->goods_id;
+        }
+        $goodsIds = array_unique($goodsIds);
+        $goodsMap = $this->getGoodsMap($goodsIds);
+        if ($goodsMap === false) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
+        foreach ($orders as $order) {
+            $payment = $paymentModel->get($order->pay_id);
+            $allPrice = 0;
+            $goods = $goodsMap[$order->goods_id];
+            $allPrice += sprintf('%.2f', $goods->price*$order->goods_num);
+            $arr = $this->getAllPriceByCouponId($order->coupon_id, $allPrice);
+            $coupon = $arr['coupon'];
+            $allPrice = $arr['allPrice'];
+            $orderInfos[] =[
+                'id' => $order->id,
+                'order_num' => $order->order_num,
+                'created_at' => formatTime($order->created_at),
+                'pay_by' => $payment->pay_name,
+                'goods_name' => $goods->title,
+                'goods_num' => $order->goods_num,
+                'coupon_price' => is_null($coupon) ? 0 : $coupon->price,
+                'all_price' => $allPrice
+            ];
+        }
+        return $orderInfos;
+    }
+    public function getOrderInfoByAgent($order)
+    {
+        $paymentModel = new Payment();
+        $goodsModel = new Goods();
+        $goods = $goodsModel->get($order->goods_id);
+        if (is_null($goods)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
+        $arr = $this->getAllPriceByCouponId($order->coupon_id, $goods->price*$order->goods_num);
+        $coupon = $arr['coupon'];
+        $allPrice = $arr['allPrice'];
+        $payment = $paymentModel->get($order->pay_id);
+        return [
+            'id' => $order->id,
+            'order_num' => $order->order_num,
+            'created_at' => formatTime($order->created_at),
+            'pay_by' => $payment->pay_name,
+            'goods_name' => $goods->title,
+            'goods_num' => $order->goods_num,
+            'coupon_price' => is_null($coupon) ? 0 : $coupon->price,
+            'all_price' => $allPrice
+        ];
+    }
+    public function getAll($searchId)
+    {
+        $arr['where'] = [['agent_id', '=', $searchId]];
+        $arr['whereIn']['key'] = 'order_status';
+        $arr['whereIn']['values'] = [self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']];
+        return DbOrder::all($arr);
+    }
+    public function getTrade($agentId, $start, $end)
+    {
+        return DbOrder::getTrade($agentId, $start, $end);
     }
 }
 ?>

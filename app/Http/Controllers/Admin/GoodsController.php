@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
+use App\Http\FileUpload\Upload;
 use App\Models\Goods;
+use App\Models\GoodsImg;
 use App\Http\Controllers\Controller;
+use App\Exceptions\ApiException;
 
 class GoodsController extends Controller
 {
@@ -41,6 +44,33 @@ class GoodsController extends Controller
         $goodsInfo['send_time'] = strtotime($goodsInfo['send_time']);
         $goodsInfo['create_time'] = time();
         $goodsModel->add($goodsInfo);
-        return config('response.success');
+        return config('error.success');
+    }
+    public function saveImg(Request $request, Upload $upload, $admin, $goodsId)
+    {
+        $goodsModel = new Goods();
+        $goodsImgModel = new GoodsImg();
+        if (!$goodsModel->has($goodsId)) {
+            throw new ApiException(config('error.goods_empty_exception.msg'), config('error.goods_empty_exception.code'));
+        }
+        $imgs = $upload->save('image');
+        if (is_array($imgs)) {
+            $arr = [];
+            foreach ($imgs as $img) {
+                $fullname = $img['path'] . '/' . $img['filename'];
+                $arr[] = [
+                    'goods_id' => $goodsId,
+                    'goods_img' => $fullname,
+                ];
+            }
+            $goodsImgModel->add($arr);
+        } else {
+            $fullname = $imgs['path'] . '/' . $imgs['filename'];
+            $goodsImgModel->add([
+                'goods_id' => $goodsId,
+                'goods_img' => $fullname,
+            ]);
+        }
+        return $imgs;
     }
 }

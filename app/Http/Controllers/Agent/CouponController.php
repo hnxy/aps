@@ -13,21 +13,22 @@ class CouponController extends Controller
      * @param  Request $request [description]
      * @return [type]           [description]
      */
-    public function index(Request $request)
+    public function index(Request $request, $agent)
     {
         $rules = [
-            'search' => 'required|integer',
             'limit' => 'integer|min:1|max:100',
             'page' => 'integer|min:1'
         ];
         $this->validate($request, $rules);
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
-        $id = $request->input('search');
         $couponModel = new Coupon();
-        $rsp = config('response.items');
-        $rsp['items'] = $couponModel->getItems($id, $limit, $page);
+        $rsp = config('error.items');
+        $rsp['items'] = $couponModel->getItems($agent->id, $limit, $page);
         $rsp['num'] = count($rsp['items']);
+        $totel = $couponModel->getAll($agent->id);
+        $rsp['totel'] = $totel;
+        $rsp['pages'] = intval($totel/$limit) + ($totel % $limit == 0 ? 0 : 1);
         return $rsp;
     }
     /**
@@ -49,7 +50,7 @@ class CouponController extends Controller
         $goodsId = $request->input('goods_id');
         $couponModel = new Coupon();
         //如果有该优惠券了，那就当成更新金额
-        if($couponModel->has($goodsId)) {
+        if ($couponModel->has($goodsId)) {
             $couponModel->modifyByGoodsId($goodsId, [
                 'price' => $request->input('price'),
             ]);
@@ -64,11 +65,11 @@ class CouponController extends Controller
                 'code' => $code,
                 'created_at' => $time,
                 'start_time' => $startTime,
-                'expired' => $startTime + $request->input('expired_day')*24*3600,
+                'expired' => $startTime + $request->input('expired_day') * 24 * 3600,
                 'all_times' => $request->input('all_times'),
             ]);
         }
-        return config('response.success');
+        return config('error.success');
     }
     /**
      * [删除优惠码]
@@ -79,6 +80,6 @@ class CouponController extends Controller
     public function delete(Request $request, $agent, $couponId)
     {
         (new Coupon())->remove($agent->id, $couponId);
-        return config('response.success');
+        return config('error.success');
     }
 }

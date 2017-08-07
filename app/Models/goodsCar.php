@@ -99,10 +99,10 @@ class GoodsCar extends Model
             $goodsIds[] = $goodsCar->goods_id;
         }
         $goodses = $goodsModel->mgetByIds($goodsIds);
-        $goodsMap = getMap($goodses, 'id');
         if (count(obj2arr($goodses)) != count($goodsIds)) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
+        $goodsMap = getMap($goodses, 'id');
         $rsp = [];
         foreach ($goodsCars as $goodsCar) {
             $goods = $goodsMap[$goodsCar->goods_id];
@@ -117,7 +117,7 @@ class GoodsCar extends Model
     private function formatGoodsCar($goodsCar, $goods)
     {
         $goodsClassesModel = new GoodsClasses();
-        if($goods->end_time <= time() ) {
+        if ($goods->end_time <= time()) {
             $temp['status'] = 1;
             $temp['goods_car_id'] = $goodsCar->id;
             $temp['goods_num'] = $goodsCar->goods_num;

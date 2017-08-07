@@ -35,7 +35,7 @@ class User extends Model
     {
         $user = DbUser::get(['where' => ['username' => $userArr['username']]]);
         if (empty($user)) {
-            throw new ApiException("此用户不存在", 2);
+            throw new ApiException(config('error.user_empty_error.msg'), config('error.user_empty_error.code'));
         }
         // 密码不正确
         if (!password_verify($userArr['passwd'], $user->passwd)) {
@@ -73,12 +73,10 @@ class User extends Model
                     'access_token' => $userInfo3['access_token'],
                     'refresh_token' => $userInfo3['refresh_token'],
                     'code' => $userInfo3['code'],
+                    'nickname' => $userInfo3['nickname'],
                 ];
-            if(DbUser::add($arr)) {
-                return DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
-            } else {
-                throw new ApiException('用户信息插入失败', config('err.insert_user_arr_err.code') );
-            }
+            DbUser::add($arr);
+            return DbUser::get(['where' => ['openid' => $userInfo3['openid']]]);
         } else {
             $arr = [
                 'last_login_time' => $lastLoginTime,
@@ -91,12 +89,10 @@ class User extends Model
                 'access_token' => $userInfo3['access_token'],
                 'refresh_token' => $userInfo3['refresh_token'],
                 'code' => $userInfo3['code'],
+                'nickname' => $userInfo3['nickname'],
             ];
-            if(DbUser::updateByOpenid($user->openid, $arr)) {
-                return DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
-            } else {
-                throw new ApiException('用户信息更新失败', config('err.insert_user_arr_err.code') );
-            }
+            DbUser::updateByOpenid($user->openid, $arr);
+            return DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
         }
     }
     public function hasCode($code)

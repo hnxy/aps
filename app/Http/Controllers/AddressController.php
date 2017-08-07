@@ -56,9 +56,9 @@ class AddressController extends Controller
         $detail = $request->input('detail');
         $areaModel = new Area();
         $addressModel = new Address();
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         if(!$areaModel->checkAddrWork($provinceId, $cityId, $areaId)) {
-            $rsp = config('response.addr_not_work');
+            $rsp = config('error.addr_not_work');
         } else {
             $addressModel->add([
                 'name' => $name,
@@ -82,7 +82,7 @@ class AddressController extends Controller
     {
         $addressModel = new Address();
         if ( ($addrDetail = $addressModel->isExist($user->id, $addressId)) === false) {
-            return config('response.addr_not_exist');
+            return config('error.addr_not_exist');
         }
         return $addressModel->getFullAddr($addrDetail);
     }
@@ -108,11 +108,11 @@ class AddressController extends Controller
         $cityId = $request->input('city');
         $areaId = $request->input('area');
         $detail = $request->input('detail');
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $areaModel = new Area();
         $addressModel = new Address();
         if(!$areaModel->checkAddrWork($provinceId, $cityId, $areaId)) {
-            $rsp = config('response.addr_not_work');
+            $rsp = config('error.addr_not_work');
         } else {
             $addressModel->modify($user->id, $addressId, [
                                     'name' => $name,
@@ -133,10 +133,10 @@ class AddressController extends Controller
      */
     public function delete(Request $request, $user, $addressId)
     {
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $addressModel = new Address();
         if ($addressModel->isExist($user->id, $addressId) === false) {
-            return config('response.addr_rm_fail');
+            return config('error.addr_rm_fail');
         }
         $addressModel->remove($user->id, $addressId);
         return $rsp;
@@ -147,10 +147,10 @@ class AddressController extends Controller
      */
     public function setDefault(Request $request, $user, $addressId)
     {
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $addressModel = new Address();
         if ($addressModel->isExist($user->id, $addressId) === false) {
-            return config('response.addr_set_fail');
+            return config('error.addr_set_fail');
         }
         $addressModel->setDefault($user->id, $addressId);
         return $rsp;

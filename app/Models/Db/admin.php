@@ -2,9 +2,9 @@
 
 namespace App\Models\Db;
 
-class Agent extends Model
+class Admin extends Model
 {
-    public static $model = 'agent';
+    public static $model = 'admin';
     public static function get($arr)
     {
         return app('db')->table(self::$model)
@@ -12,10 +12,10 @@ class Agent extends Model
                         ->first();
     }
 
-    public static function add($AgentArr)
+    public static function add($AdminArr)
     {
         return app('db')->table(self::$model)
-                        ->insert($AgentArr);
+                        ->insert($AdminArr);
     }
     public static function update($arr)
     {
@@ -23,10 +23,9 @@ class Agent extends Model
                         ->where($arr['where'])
                         ->update($arr['update']);
     }
-    public static function mget($arr)
+    public static function mget()
     {
         return app('db')->table(self::$model)
-                        ->where(isset($arr['where']) ? $arr['where'] : [])
                         ->select('id', 'username')
                         ->get();
     }

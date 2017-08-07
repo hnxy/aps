@@ -4,11 +4,10 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Routing\Router;
-use App\Models\Agent;
 use App\Exceptions\ApiException;
 
 
-class AgentAuth
+class GetAuth
 {
     /**
      * Handle an incoming request.
@@ -21,16 +20,8 @@ class AgentAuth
     public function handle($request, Closure $next, $guard = null)
     {
         $agent = $request->route()[2]['agent_id'];
-        $token = getToken($request);
-        $time = time();
-        if (empty($agent)) {
-            throw new ApiException("", 1, 404);
-        }
-        if (empty($token) || $token != $agent->token) {
-            throw new ApiException("token不正确", 3, 401);
-        }
-        if ($agent->token_expired < $time) {
-            return response("登录已经过期", 401);
+        if($agent->level !== 1) {
+            throw new ApiException("你没有此权限", 4, 401);
         }
         return $next($request);
     }

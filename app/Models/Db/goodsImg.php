@@ -17,4 +17,9 @@ class GoodsImg extends Model
                         ->select(['goods_img'])
                         ->get();
     }
+    public static function add($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->insert($arr);
+    }
 }

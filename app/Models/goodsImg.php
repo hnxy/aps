@@ -16,4 +16,9 @@ class GoodsImg extends Model
     {
         return DbGoodsImg::mget(['where' => ['goods_id' => $goodsId] ]);
     }
+
+    public function add($arr)
+    {
+        DbGoodsImg::add($arr);
+    }
 }

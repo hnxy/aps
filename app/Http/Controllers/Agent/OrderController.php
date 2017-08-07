@@ -29,17 +29,18 @@ class OrderController extends Controller
         ];
         $this->validate($request, $rules);
         $searchId = $request->input('search');
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $orderModel = new Order();
         if($request->has('start_time') && $request->has('end_time')) {
             $rsp['code'] = 0;
             $limit = $request->input('limit', 10);
             $page = $request->input('page', 1);
             $orders = $orderModel->getByTime($searchId, strtotime($request->input('start_time')), strtotime($request->input('end_time')), $limit, $page);
-            var_dump($orders);
-            exit;
-            $rsp['items'] = $orderModel->getOrdersInfo($orders);
+            $rsp['items'] = $orderModel->getOrdersInfoByAgent($orders);
             $rsp['num'] = count($rsp['items']);
+            $totel = $orderModel->getAll($searchId);
+            $rsp['totel'] = $totel;
+            $rsp['pages'] =  intval($totel/$limit) + ($totel % $limit == 0 ? 0 : 1);
         } else {
             $rsp['code'] = 1;
             $rsp['msg'] = '参数错误';
@@ -53,7 +54,7 @@ class OrderController extends Controller
      * @param  [type]  $orderId [description]
      * @return [type]           [description]
      */
-    public function show(Request $request, $agent, $orderId)
+    public function show(Request $request, $agent, $orderNum)
     {
         $rules = [
             'search' => 'required|integer',
@@ -61,10 +62,33 @@ class OrderController extends Controller
         $this->validate($request, $rules);
         $searchId = $request->input('search');
         $orderModel = new Order();
-        $order = $orderModel->getByAgentId($searchId, $orderId);
+        $order = $orderModel->getByAgentId($searchId, $orderNum);
         if (!$orderModel->isExist($order)) {
-            return config('response.order_not_exist');
+            return config('error.order_not_exist');
         }
-        return $orderModel->getOrderInfo($order, $order->coupon_id);
+        return $orderModel->getOrderInfoByAgent($order, $order->coupon_id);
+    }
+    public function trade(Request $request)
+    {
+        $rules = [
+            'search' => 'required|integer',
+            'start_time' => 'required|date',
+            'end_time' => 'required|date',
+        ];
+        $this->validate($request, $rules);
+        $searchId = $request->input('search');
+        $startTime = strtotime($request->input('start_time'));
+        $endTime = strtotime($request->input('end_time'));
+        $orderModel = new Order();
+        $orders = $orderModel->getTrade($searchId, $startTime, $endTime);
+        $day = intval(($endTime - $startTime) / (3600 * 24)) + 1;
+        for($i = 0; $i < $day; $i++) {
+            $key = date('m-d', $startTime + $i * 3600 * 24);
+            $trades[$key] = 0;
+        }
+        foreach ($orders as $order) {
+            $trades[$order->day] = $order->totel;
+        }
+        return $trades;
     }
 }

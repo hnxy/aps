@@ -20,10 +20,10 @@ class Goods extends Model
         $goodsInfo = DbGoods::get(['where' =>
             ['id' => $id],
           ]);
-        if(empty($goodsInfo)) {
+        if (empty($goodsInfo)) {
             return null;
         }
-        if($time >= $goodsInfo->start_time && $time < $goodsInfo->end_time) {
+        if ($time >= $goodsInfo->start_time && $time < $goodsInfo->end_time) {
             $goodsInfo->status = 0;
             $goodsInfo->status_text = null;
         } else {
@@ -92,6 +92,16 @@ class Goods extends Model
     public function mgetByIds($goodsIds)
     {
         return DbGoods::mgetByIds($goodsIds);
+    }
+    public function has($goodsId)
+    {
+        $goodsInfo = DbGoods::get(['where' =>
+            ['id' => $goodsId],
+        ]);
+        if (empty($goodsInfo)) {
+            return false;
+        }
+        return true;
     }
 }
 ?>

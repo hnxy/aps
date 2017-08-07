@@ -24,11 +24,11 @@ class CouponController extends Controller
         $this->validate($request, $rules);
         $goodsId = $request->input('goods_id');
         $agentId = $request->input('agent_id');
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $couponModel = new Coupon();
         $coupon = $couponModel->get($goodsId, $agentId);
         if(empty($coupon) || $coupon->expired < time() ) {
-            $rsp = config('response.coupon_get_fail');
+            $rsp = config('error.coupon_get_fail');
         } else {
             $rsp['code'] = 0;
             $rsp['msg'] = $coupon->code;
@@ -49,7 +49,7 @@ class CouponController extends Controller
             'agent_id' =>  'required|integer',
         ];
         $this->validate($request, $rules);
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $code = $request->input('code');
         $agentId = $request->input('agent_id');
         $goodsCarIds = explode(',', $request->input('goods_car_ids'));
@@ -60,11 +60,11 @@ class CouponController extends Controller
         if(count(obj2arr($goodsCars)) != count($goodsCarIds)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }
-        if($coupon = $couponModel->couponValidate($goodsCars, $code, $agentId)) {
+        if($coupon = $couponModel->couponValidate($goodsCars, $code, $agentId, $user->id)) {
             $rsp['code'] = 0;
             $rsp['msg'] = $coupon;
         } else {
-            $rsp = config('response.coupon_not_work');
+            $rsp = config('error.coupon_not_work');
         }
         return $rsp;
     }

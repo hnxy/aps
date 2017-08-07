@@ -3,14 +3,14 @@
 namespace App\Models;
 use App\Exceptions\ApiException;
 
-class Pay extends Model
+class WxPay extends Model
 {
-    public static $model = 'Pay';
+    public static $model = 'WxPay';
 
     public function getSign($params)
     {
         ksort($params, SORT_STRING);
-        $signArr = '';
+        $signArr = [];
         foreach ($params as $key => $value) {
             $signArr[] = sprintf('%s=%s', $key, $value);
         }
@@ -19,8 +19,9 @@ class Pay extends Model
         $sign = strtoupper(md5($sign));
         return $sign;
     }
-    public function pay($combinePayId, $all, $openid)
+    public function pay($combinePayId, $orders, $openid)
     {
+        $all = $this->resolveOrders($orders);
         $time = time();
         $params = [
             'appid' => config('wx.appid'),
@@ -31,7 +32,7 @@ class Pay extends Model
             'out_trade_no' => $combinePayId,
             'total_fee' => 1,//支付金额，单位为分
             'spbill_create_ip' => $_SERVER['REMOTE_ADDR'],
-            'notify_url' => url('/v1/order/recive'),
+            'notify_url' => 'http://aps.cg0.me/v1/order/recive',
             'trade_type' => 'JSAPI',
             'openid' => $openid,
             'time_start' => date('YmdHis', $time),
@@ -46,23 +47,25 @@ class Pay extends Model
         $rsp = $this->sendXML($XMLDATA);
         $rspArr = obj2arr(simplexml_load_string($rsp, 'SimpleXMLElement', LIBXML_NOCDATA));
         if ($rspArr['return_code'] != 'SUCCESS') {
-            throw new ApiException($rspArr['return_msg'], config('wx.communicate_exception.code'));
+            throw new ApiException($rspArr['return_msg'], config('error.communicate_exception.code'));
         }
         if ($rspArr['result_code'] != 'SUCCESS') {
-            throw new ApiException($rspArr['err_code_des'], config('wx.transaction_exception.code'));
+            throw new ApiException($rspArr['err_code_des'], config('error.transaction_exception.code'));
         }
+        $nonceStr = getRandomString(16);
         //获取支付签名
         $paySignParams = [
             'timeStamp' => $time,
-            'nonceStr' =>  $rspArr['nonce_str'],
+            'nonceStr' =>  $nonceStr,
             'signType' => 'MD5',
             'package' => 'prepay_id=' . $rspArr['prepay_id'],
             'appId' => config('wx.appid'),
         ];
         $paySign = $this->getSign($paySignParams);
         return [
+            'appid' => config('wx.appid'),
             'timestamp' => $time,
-            'nonce_str' => $rspArr['nonce_str'],
+            'nonce_str' => $nonceStr,
             'trade_type' => $rspArr['trade_type'],
             'prepay_id' => $rspArr['prepay_id'],
             'paySign' => $paySign,
@@ -95,5 +98,42 @@ class Pay extends Model
         $rsp = curl_exec($ch);
         curl_close($ch);
         return $rsp;
+    }
+    public function getAll($goodses, array $orders)
+    {
+        $couponModel = new Coupon();
+        $goodsMap = getMap($goodses, 'id');
+        //计算总金额
+        $all = 0;
+        foreach ($orders as $order) {
+            $goods = $goodsMap[$order['goods_id']];
+            $all += $goods->price * $order['goods_num'];
+            if (!is_null($order['coupon_id'])) {
+                $coupon = $couponModel->getById($order['coupon_id']);
+                //防止该优惠券已经删除
+                if (!empty($coupon)) {
+                    $all -= $coupon->price;
+                }
+            }
+        }
+        return $all;
+    }
+    protected function resolveOrders($orders)
+    {
+        $goodsIds = [];
+        $orderModel = new Order();
+        $goodsModel = new Goods();
+        $couponModel = new Coupon();
+        $orders = obj2arr($orders);
+        foreach ($orders as $order) {
+            $goodsIds[] = $order['goods_id'];
+        }
+        $goodsIds = array_unique($goodsIds);
+        $goodses = $goodsModel->mgetByIds($goodsIds);
+        //防止商品被删
+        if (count(obj2arr($goodses)) != count($goodsIds)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
+        return $this->getAll($goodses, $orders);
     }
 }

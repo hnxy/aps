@@ -29,7 +29,7 @@ class OrderController extends Controller
         ];
         $this->validate($request, $rules);
         $searchId = $request->input('search');
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $orderModel = new Order();
         if($request->has('start_time') && $request->has('end_time')) {
             $rsp['code'] = 0;
@@ -61,7 +61,7 @@ class OrderController extends Controller
         $orderModel = new Order();
         $order = $orderModel->getByAgentId($searchId, $orderId);
         if (!$orderModel->isExist($order)) {
-            return config('response.order_not_exist');
+            return config('error.order_not_exist');
         }
         return $orderModel->getOrderInfo($order, $order->coupon_id);
     }
@@ -77,7 +77,7 @@ class OrderController extends Controller
             'logistics_code' => 'required|string|max:32',
         ];
         $this->validate($request, $rules);
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $orderModel = new Order();
         $orderIds = explode(',', $request->input('order_ids'));
         array_pop($orderIds);
@@ -106,7 +106,7 @@ class OrderController extends Controller
             'status' => 'required|integer'
         ];
         $this->validate($request, $rules);
-        $rsp = config('response.items');
+        $rsp = config('error.items');
         $status = $request->input('status');
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);

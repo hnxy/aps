@@ -46,10 +46,10 @@ class GoodsCarController extends Controller
         $goodsNum = $request->input('goods_num');
         $goodsCar = $goodsCarModel->hasGoods($user->id, $goodsId);
         if ($goodsCar !== false) {
-            if ($goodsNum+$goodsCar->goods_num > config('wx.max_goods_num')) {
+            if ($goodsNum + $goodsCar->goods_num > config('wx.max_goods_num')) {
                 throw new ApiException(config('error.goods_num_over.msg'), config('error.goods_num_over.code'));
             }
-            $goodsCarModel->updateGoodsNum($user->id, $goodsCar->id, $goodsNum+$goodsCar->goods_num);
+            $goodsCarModel->updateGoodsNum($user->id, $goodsCar->id, $goodsNum + $goodsCar->goods_num);
         } else {
             $goodsCarModel->add([
                         'goods_id' => $goodsId,
@@ -58,7 +58,7 @@ class GoodsCarController extends Controller
                         'created_at' => time(),
                     ]);
         }
-        return config('response.success');
+        return config('error.success');
     }
     /**
      * [更新购物车]
@@ -75,10 +75,10 @@ class GoodsCarController extends Controller
         $goodsCarModel = new GoodsCar();
         $goodsCar = $goodsCarModel->get($user->id, $goodsCarId);
         if (!$goodsCarModel->canUpdate($goodsCar)) {
-            return config('response.goods_car_update_fail');
+            return config('error.goods_car_update_fail');
         }
         $goodsCarModel->updateGoodsNum($user->id, $goodsCarId, $goodsNum);
-        return config('response.success');
+        return config('error.success');
     }
     /**
      * [检查商品是否是未开售或者是已过期的商品]
@@ -102,10 +102,10 @@ class GoodsCarController extends Controller
         $goodsCarModel = new GoodsCar();
         $goodsCar = $goodsCarModel->get($user->id, $goodsCarId);
         if (!$goodsCarModel->canDelete($goodsCar)) {
-            return config('response.addr_rm_fail');
+            return config('error.addr_rm_fail');
         }
         $goodsCarModel->remove($user->id, $goodsCarId);
-        return config('response.success');
+        return config('error.success');
     }
     /**
      * [获取购物车总数]
@@ -115,7 +115,7 @@ class GoodsCarController extends Controller
      */
     public function getAll(Request $request, $user)
     {
-        $rsp = config('response.success');
+        $rsp = config('error.success');
         $rsp['num'] = (new GoodsCar())->getAllNum($user->id);
         return $rsp;
     }

@@ -53,6 +53,12 @@ class Coupon extends Model
                         ->where($arr['where'])
                         ->update(['is_del' => 1]);
     }
+    public static function all($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->count('id');
+    }
 }
 
 ?>

@@ -54,9 +54,9 @@ class GoodsController extends Controller
                     ];
             }
             $goods->send_time = formatM($goods->send_time);
-            $goods->start_time_text =formatTime($goods->start_time);
-            $goods->end_time_text =formatTime($goods->end_time);
-            $goods->leave_end_time_text =formatD($goods->end_time);
+            $goods->start_time_text = formatTime($goods->start_time);
+            $goods->end_time_text = formatTime($goods->end_time);
+            $goods->leave_end_time_text = formatD($goods->end_time);
         }
         unset($goods);
         return $goodses;

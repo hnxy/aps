@@ -27,6 +27,9 @@ class LogisticsController extends Controller
         $this->checkOrderWork($orderInfo);
         $goods = $goodsModel->getDetail($orderInfo->goods_id);
         $express = $expressModel->get($orderInfo->express_id);
+        if (empty($express)) {
+            throw new ApiException(config('error.express_exception.msg'), config('error.express_exception.code'));
+        }
         $expressCode = $express->code;
         $logisticsCode = $orderInfo->logistics_code;
         $requestData = <<<Data

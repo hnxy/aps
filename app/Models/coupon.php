@@ -24,6 +24,8 @@ class Coupon extends Model
     }
     public function getItems($agentId, $limit, $page)
     {
+        $goodsIds = [];
+        $goodsModel = new Goods();
         $arr['where'] = [
             ['agent_id', '=', $agentId],
             ['is_del', '=', 0],
@@ -31,17 +33,27 @@ class Coupon extends Model
         $arr['limit'] = $limit;
         $arr['page'] = $page;
         $coupons = DbCoupon::mget($arr);
+        foreach ($coupons as $coupon) {
+            $goodsIds[] = $coupon->goods_id;
+        }
+        array_unique($goodsIds);
+        $goodses = $goodsModel->mgetByIds($goodsIds);
+        if (count(obj2arr($goodses)) != count($goodsIds)) {
+            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
+        }
+        $goodsMap = getMap($goodses, 'id');
         foreach ($coupons as &$coupon) {
             if($coupon->expired < time()) {
                 $coupon->status = 1;
-                $coupon->status_text = '该优惠券已过期';
+                $coupon->status_text = '已过期';
             } else {
                 $coupon->status = 0;
-                $coupon->status_text = null;
+                $coupon->status_text = '使用中';
             }
             $coupon->created_at = formatTime($coupon->created_at);
             $coupon->start_time = formatTime($coupon->start_time);
             $coupon->expired = formatTime($coupon->expired);
+            $coupon->range = '特定商品(' . $goodsMap[$coupon->goods_id]->title . ')';
         }
         unset($coupon);
         return obj2arr($coupons);
@@ -152,6 +164,11 @@ class Coupon extends Model
         if (!empty($order)) {
             throw new ApiException(config('error.coupon_has_been_used_exception.msg'), config('error.coupon_has_been_used_exception.code'));
         }
+    }
+    public function getAll($agentId)
+    {
+        $arr['where'] = ['agent_id' => $agentId];
+        return DbCoupon::all($arr);
     }
 }
 

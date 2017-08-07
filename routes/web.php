@@ -16,7 +16,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
             $app->get('/preOrder', 'OrderController@preOrder');
             $app->get('/', 'OrderController@index');
             $app->get('/count', 'OrderController@getTypeCount');
-            $app->get('/combine', 'OrderController@combinePay');
+            $app->get('/unifiedorder', 'OrderController@combinePay');
             $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1, 11}'] ], function() use($app){
                 $app->get('/', 'OrderController@show');
                 $app->put('finish', 'OrderController@finishRecv');
@@ -55,8 +55,6 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
         $app->group(['prefix' => 'coupon'], function() use ($app) {
             $app->get('/', 'CouponController@checkCode');
         });
-
-
     });
     $app->group(['prefix' => '/goods'], function() use ($app) {
         $app->get('/', 'GoodsController@index');
@@ -64,40 +62,42 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
             $app->get('/', 'GoodsController@show');
         });
     });
-
-
     //代理后台相关
     $app->group(['prefix' => '/agent', 'namespace' => 'Agent'], function() use ($app) {
-        $app->group(['prefix' => '/{agent_id}', 'where' => ['agent_id' => '[0-9]{1,11}'], 'middleware' => ['agent_auth'] ], function () use ($app) {
+        $app->post('/login', 'UserController@login');
+        $app->get('/', 'UserController@index');
+        $app->group(['prefix' => '/{agent_id}', 'where' => ['agent_id' => '[0-9]{1,11}'], 'middleware' => ['my_auth'] ], function () use ($app) {
             $app->group(['middleware' => ['get_auth'] ], function () use ($app) {
+                $app->get('/qr', 'UserController@getQrcode');
                 $app->group(['prefix' => '/order'], function() use ($app) {
                     $app->get('/', 'OrderController@index');
-                    $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function () use ($app) {
+                    $app->get('/trade', 'OrderController@trade');
+                    $app->group(['prefix' => '/{order_num}', 'where' => ['id' => '[0-9]{1,11}'] ], function () use ($app) {
                         $app->get('/', 'OrderController@show');
                     });
                 });
-                $app->group(['prefix' => '/coupon'], function() use ($app) {
-                    $app->get('/', 'CouponController@index');
-                });
+            });
+            $app->group(['middleware' => ['add_auth']], function () use ($app) {
+                $app->post('/', 'UserController@store');
             });
             $app->group(['prefix' => '/coupon'], function() use ($app) {
+                $app->get('/', 'CouponController@index');
                 $app->post('/', 'CouponController@store');
                 $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function() use ($app) {
                     $app->delete('/', 'CouponController@delete');
                 });
             });
         });
-        $app->group(['prefix' => '/agent'], function () use ($app) {
-            $app->post('/', 'UserController@store');
-            $app->post('/login', 'UserController@login');
-        });
     });
     //管理员相关
     $app->group(['prefix' => '/admin', 'namespace' => 'Admin'], function () use ($app) {
-        $app->group(['prefix' => '/{admin_id}', 'where' => ['admin_id' => '[0-9]{1,11}'], 'middleware' => ['admin_auth'] ], function () use ($app) {
+        $app->group(['prefix' => '/{admin_id}', 'where' => ['admin_id' => '[0-9]{1,11}'], 'middleware' => ['my_auth'] ], function () use ($app) {
             //商品相关
             $app->group(['prefix' => '/goods'], function () use ($app) {
-                $app->post('/goods', 'GoodsController@store');
+                $app->post('/', 'GoodsController@store');
+                $app->group(['prefix' => '/{goods_id}', 'where' => ['goods_id' => '[0-9]{1, 11}']], function () use ($app) {
+                    $app->post('/img', 'GoodsController@saveImg');
+                });
             });
             //订单相关
             $app->group(['prefix' => '/order'], function() use ($app) {

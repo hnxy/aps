@@ -33,7 +33,7 @@ class UserController extends Controller
         $AgentArr = $request->except('confirm');
         $AgentArr['passwd'] = password_hash($AgentArr['passwd'], PASSWORD_DEFAULT);
         $agentModel->add($AgentArr);
-        return config('response.success');
+        return config('error.success');
 
     }
     public function login(Request $request)

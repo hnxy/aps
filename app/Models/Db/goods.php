@@ -42,13 +42,20 @@ class Goods extends Model
                         ->insert($goodsArr);
     }
     public static function modifyStock($goods, $type = 'increment') {
-        foreach ($goods as $id => $num) {
-            app('db')->table(self::$model)
-                     ->where([
-                        ['id', '=', $id],
-                    ])
-                     ->$type('stock', $num);
+        try {
+            app('db')->beginTransaction();
+            foreach ($goods as $id => $num) {
+                app('db')->table(self::$model)
+                         ->where([
+                            ['id', '=', $id],
+                        ])
+                         ->$type('stock', $num);
+            }
+            app('db')->commit();
+        } catch (Execption $e) {
+            app('db')->rollBack();
         }
+
     }
     public static function mgetByIds($goodsIds)
     {

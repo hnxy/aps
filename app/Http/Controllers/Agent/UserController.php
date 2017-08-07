@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Exceptions\ApiException;
 use App\Models\Goods;
 use App\Models\Agent;
+use App\Models\Setting;
 use App\Http\Controllers\Controller;
 
 class UserController extends Controller
@@ -14,7 +15,7 @@ class UserController extends Controller
      * [addAgent description]
      * @param Request $request [description]
      */
-    public function store(Request $request)
+    public function store(Request $request, $agent)
     {
         $rules = [
             'username' => 'required|string|max:16',
@@ -30,10 +31,17 @@ class UserController extends Controller
         if($agentModel->hasUsername($request->input('username'))) {
             throw new ApiException (config('error.agent_exist_exception.msg'), config('error.agent_exist_exception.code'));
         }
-        $AgentArr = $request->except('confirm');
+        $AgentArr = [
+            'username' => $request->input('username'),
+            'passwd' => $request->input('passwd'),
+            'name' => $request->input('name'),
+            'phone' => $request->input('phone'),
+            'id_num' => $request->input('id_num'),
+            'address' => $request->input('address'),
+        ];
         $AgentArr['passwd'] = password_hash($AgentArr['passwd'], PASSWORD_DEFAULT);
         $agentModel->add($AgentArr);
-        return config('response.success');
+        return config('error.success');
     }
     public function login(Request $request)
     {
@@ -56,5 +64,27 @@ class UserController extends Controller
             throw new ApiException("账号或密码错误", 1);
         }
         return $agent;
+    }
+    public function index($agent)
+    {
+        $agentModel = new Agent();
+        return $agentModel->mget();
+    }
+    public function getQrcode(Request $request, $agent)
+    {
+        $settingModel = new Setting();
+        $filename = getRandomString(32);
+        $dir = config('wx.qrcode_path');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        $fullname = $dir . $filename . '.png';
+        $content = app('qrcode')->format('png')
+                                ->size(800)
+                                ->generate('http://aps.cg0.me/v1/login3?agent_id=' . $agent->id, $fullname);
+        $settingModel->add([
+            'qrcode_url' => $fullname,
+        ]);
+        return $fullname;
     }
 }
