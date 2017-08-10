@@ -172,6 +172,7 @@ class UserController extends Controller
             'uid' => $userInfo->id,
             'from_agent_id' => $userInfo->agent_id,
         ];
+<<<<<<< HEAD
         $callbackArr = explode('#', $callback);
         if (strpos($callbackArr[1], '?') === false) {
             return redirect($callback . '?' . http_build_query($params));
@@ -195,6 +196,13 @@ class UserController extends Controller
             'level' => $level,
             ]);
         return config('error.success');
+=======
+        if (strpos($callback, '?') === false) {
+            return redirect($callback.'?'.http_build_query($params));
+        } else {
+            return redirect($callback.'&'.http_build_query($params));
+        }
+>>>>>>> cb481610ae93f96781b3f7353afea62b5eacfdf6
     }
 }
 ?>
