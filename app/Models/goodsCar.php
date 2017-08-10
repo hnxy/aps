@@ -122,7 +122,7 @@ class GoodsCar extends Model
             $temp['goods_car_id'] = $goodsCar->id;
             $temp['goods_num'] = $goodsCar->goods_num;
             $goods->status_text = '该商品已下架';
-            $goods->send_time = formatM($goods->send_time);
+            $goods->send_time = '预计' . formatM($goods->send_time) . '发货';
             $temp['goods_info'] = $goods;
         } else {
             $temp['status'] = 0;
@@ -134,7 +134,7 @@ class GoodsCar extends Model
             } else {
                 $goods->status_text = $goodsClasses->name;
             }
-            $goods->send_time = formatM($goods->send_time);
+            $goods->send_time = '预计' . formatM($goods->send_time) . '发货';
             $temp['goods_info'] = $goods;
         }
         return $temp;
