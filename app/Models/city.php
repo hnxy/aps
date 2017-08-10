@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
-class City
-{
-    private static $model = 'city';
+use App\Models\Db\City as DbCity;
 
-    public static function get($id)
+class City extends Model
+{
+    public static $model = 'City';
+
+    public function get($id)
     {
-        return app('db')->table(self::$model)
-                        ->where(['id', '=', $id])
-                        ->first();
+        return DbCity::get(['where' => ['city_id' => $id] ]);
     }
 }
 

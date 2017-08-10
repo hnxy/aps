@@ -33,11 +33,9 @@ class User extends Model
      */
     public function login($userArr)
     {
-        $user = app('db')->table(self::$model)->where([
-                'username' => $userArr['username']
-            ])->first();
+        $user = DbUser::get(['where' => ['username' => $userArr['username']]]);
         if (empty($user)) {
-            throw new ApiException("此用户不存在", 2);
+            throw new ApiException(config('error.user_empty_error.msg'), config('error.user_empty_error.code'));
         }
         // 密码不正确
         if (!password_verify($userArr['passwd'], $user->passwd)) {
@@ -45,7 +43,7 @@ class User extends Model
         }
         $token = genToken();
         $lastLoginTime = time();
-        static::updateById($user->id, [
+        DbUser::updateById($user->id, [
             'last_login_time' => $lastLoginTime,
             'login_count' => $user->login_count + 1,
             'token' => $token,
@@ -54,77 +52,61 @@ class User extends Model
             'last_ip' => $userArr['last_ip'],
             ]
         );
-        return ['id' => $user->id, 'token' => $token]   ;
+        return ['id' => $user->id, 'token' => $token];
     }
-    public static function loginBy3($userInfo3)
+    public function loginBy3($userInfo3)
     {
-        $user = static::getByOpenid($userInfo3['openid']);
+        $user = DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
+        $lastIp = getIp();
+        $token = genToken();
+        $lastLoginTime = time();
         if (empty($user)) {
-            if(static::add($userInfo3)) {
-                return self::getByOpenid($userInfo3['openid']);
-            } else {
-                throw new ApiException('用户信息插入失败', config('err.insert_user_arr_err.code') );
-            }
+            $arr = [
+                    'last_login_time' => $lastLoginTime,
+                    'login_count' => 1,
+                    'token' => $token,
+                    'token_expired' => $lastLoginTime + 3600 * 24,
+                    'user_agent' => $userInfo3['User-Agent'],
+                    'last_ip' => $lastIp,
+                    'openid' => $userInfo3['openid'],
+                    'headimgurl' => $userInfo3['headimgurl'],
+                    'access_token' => $userInfo3['access_token'],
+                    'refresh_token' => $userInfo3['refresh_token'],
+                    'code' => $userInfo3['code'],
+                    'nickname' => $userInfo3['nickname'],
+                ];
+            DbUser::add($arr);
+            return DbUser::get(['where' => ['openid' => $userInfo3['openid']]]);
         } else {
-            if(static::updateByOpenid($user, $userInfo3['User-Agent'])) {
-                return self::getByOpenid($userInfo3['openid']);
-            } else {
-                throw new ApiException('用户信息更新失败', config('err.insert_user_arr_err.code') );
-            }
+            $arr = [
+                'last_login_time' => $lastLoginTime,
+                'login_count' => $user->login_count + 1,
+                'token' => $token,
+                'token_expired' => $lastLoginTime + 3600 * 24,
+                'user_agent' => $userInfo3['User-Agent'],
+                'last_ip' => $lastIp,
+                'headimgurl' => $userInfo3['headimgurl'],
+                'access_token' => $userInfo3['access_token'],
+                'refresh_token' => $userInfo3['refresh_token'],
+                'code' => $userInfo3['code'],
+                'nickname' => $userInfo3['nickname'],
+            ];
+            DbUser::updateByOpenid($user->openid, $arr);
+            return DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);
         }
     }
-    /**
-     * [通过userid来更新用户的登录情况]
-     * @param  [String] $userId [用户ID]
-     * @param  [Array] $arr    [包含用户信息的数组]
-     * @return [Bool]         [更新是否成功]
-     */
-    private static function updateById($userId, $arr)
+    public function hasCode($code)
     {
-        return app('db')->table(self::$model)->where(['id' => $userId])->update($arr);
+        $user = DbUser::get(['where' => ['code' => $code]]);
+        if (empty($user)) {
+            return false;
+        }
+        return $user;
     }
-    /**
-     * [通过openid来更新用户的登录情况]
-     * @param  [Array] $userArr [包含用户信息的数组]
-     * @return [Bool]          [更新是否成功]
-     */
-    public static function updateByOpenid($user, $UserAgent)
+    public function mgetByIds($userIds = [])
     {
-        $lastIp = getIp();
-        $token = genToken();
-        $lastLoginTime = time();
-        $arr = [
-            'last_login_time' => $lastLoginTime,
-            'login_count' => $user->login_count + 1,
-            'token' => $token,
-            'token_expired' => $lastLoginTime + 3600 * 24,
-            'user_agent' => $UserAgent,
-            'last_ip' => $lastIp,
-        ];
-        return app('db')->table(self::$model)->where(['openid' => $user->openid])->update($arr);
-    }
-    private static function add($userArr)
-    {
-        $lastIp = getIp();
-        $token = genToken();
-        $lastLoginTime = time();
-        return app('db')->table(self::$model)
-                        ->insert([
-                            'last_login_time' => $lastLoginTime,
-                            'login_count' => 1,
-                            'token' => $token,
-                            'token_expired' => $lastLoginTime + 3600 * 24,
-                            'user_agent' => $userArr['User-Agent'],
-                            'last_ip' => $lastIp,
-                            'openid' => $userArr['openid']
-                        ]);
-    }
-    private static function getByOpenid($openid)
-    {
-        return  $user = app('db')->table(self::$model)
-                                 ->where([
-                                    'openid' => $openid
-                                ])
-                                ->first();
+        $arr['whereIn']['key'] = 'id';
+        $arr['whereIn']['values'] = $userIds;
+        return DbUser::mget($arr);
     }
 }

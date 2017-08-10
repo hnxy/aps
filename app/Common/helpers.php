@@ -28,7 +28,6 @@
         return $str;
     }
 
-
     /**
      * [genToken description]
      * 生成token,以后升级将会引入JWT,目前先使用普通的token
@@ -52,6 +51,7 @@
         $token = $request->input('token');
         return  $authorization ? $authorization : $token;
     }
+
     /**
      * [自定义的curl操作]
      * @param  [String] $url    [请求的URL地址]
@@ -60,21 +60,21 @@
      */
     function myCurl($url, $method = 'GET') {
         $ch = curl_init();
-        if (strtolower($method) == 'POST') {
+        if (strtolower($method) == 'post') {
             curl_setopt($ch, CURLOPT_POST, true);
         }
-        curl_setopt($ch,CURLOPT_URL,$url);
-        curl_setopt($ch,CURLOPT_HEADER,0);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-        curl_setopt($ch,CURLOPT_TIMEOUT,10);
-        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         $resText = curl_exec($ch);
         if (curl_errno($ch)) {
             curl_close($ch);
             return curl_error($ch);
         } else {
             curl_close($ch);
-            return json_decode($resText,true);
+            return json_decode($resText, true);
         }
     }
 
@@ -111,13 +111,85 @@
         unset($arr);
         return $arrs;
     }
+    /**
+     * [formatTime description]
+     * @param  [type] $timestamp [description]
+     * @return [type]            [description]
+     */
     function formatTime($timestamp) {
-        return date('Y年:m月:d日 H:i:s');
+        return date('Y年n月d日 H:i:s', $timestamp);
     }
+    /**
+     * [formatM description]
+     * @param  [type] $timestamp [description]
+     * @return [type]            [description]
+     */
+    function formatM($timestamp) {
+        return date('n月d日', $timestamp);
+    }
+    function formatY($timestamp) {
+        return date('Y年n月d日', $timestamp);
+    }
+    /**
+     * [formatD description]
+     * @param  [type] $timestamp [description]
+     * @return [type]            [description]
+     */
     function formatD($timestamp) {
         $diff = $timestamp - time();
         $D =  intval($diff/86400);
         $H = intval($diff%86400/3600);
-        return $D.'天'.$H.'小时';
+        $I = intval($diff%86400%3600/60);
+        $S = intval($diff%86400%3600%60);
+        return $D . '天' . $H . '小时' . $I . '分' . $S . '秒';
+    }
+        /**
+     *  post提交数据
+     * @param  string $url 请求Url
+     * @param  array $datas 提交的数据
+     * @return url响应返回的html
+     */
+    function sendPost($url, $datas) {
+        $temps = array();
+        foreach ($datas as $key => $value) {
+            $temps[] = sprintf('%s=%s', $key, $value);
+        }
+        $post_data = implode('&', $temps);
+        $url_info = parse_url($url);
+        if(empty($url_info['port']))
+        {
+            $url_info['port']=80;
+        }
+        $httpheader = "POST " . $url_info['path'] . " HTTP/1.0\r\n";
+        $httpheader.= "Host:" . $url_info['host'] . "\r\n";
+        $httpheader.= "Content-Type:application/x-www-form-urlencoded\r\n";
+        $httpheader.= "Content-Length:" . strlen($post_data) . "\r\n";
+        $httpheader.= "Connection:close\r\n\r\n";
+        $httpheader.= $post_data;
+        $fd = fsockopen($url_info['host'], $url_info['port']);
+        fwrite($fd, $httpheader);
+        $gets = "";
+        $headerFlag = true;
+        while (!feof($fd)) {
+            if (($header = @fgets($fd)) && ($header == "\r\n" || $header == "\n")) {
+                break;
+            }
+        }
+        while (!feof($fd)) {
+            $gets.= fread($fd, 128);
+        }
+        fclose($fd);
+
+        return $gets;
+    }
+
+    /**
+     * 电商Sign签名生成
+     * @param data 内容
+     * @param appkey Appkey
+     * @return DataSign签名
+     */
+    function myEncrypt($data, $appkey) {
+        return urlencode(base64_encode(md5($data.$appkey)));
     }
 ?>

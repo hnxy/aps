@@ -17,14 +17,12 @@ class GoodsController extends Controller
     public function index(Request $request)
     {
         $rules = [
-            'limit' => 'integer|max:100',
-            'page' => 'integer',
+            'limit' => 'integer|min:1|max:100',
+            'page' => 'integer|min:1',
         ];
         $this->validate($request, $rules);
-        $limit = $request->input('limit');
-        $page  = $request->input('page');
-        $limit = $limit ? $limit : 10;
-        $page = $page ? $page : 1;
+        $limit = $request->input('limit', 10);
+        $page  = $request->input('page', 1);
         $goods = new Goods();
         $goodsClasses= new GoodsClasses();
         $goodses = $this->formatGoodses($goods->mget($limit,$page));
@@ -55,9 +53,10 @@ class GoodsController extends Controller
                     'can_click' => 1,
                     ];
             }
-            $goods->start_time_text =formatTime($goods->start_time);
-            $goods->end_time_text =formatTime($goods->end_time);
-            $goods->leave_end_time_text =formatD($goods->end_time);
+            $goods->send_time = formatM($goods->send_time);
+            $goods->start_time_text = formatTime($goods->start_time);
+            $goods->end_time_text = formatTime($goods->end_time);
+            $goods->leave_end_time_text = formatD($goods->end_time);
         }
         unset($goods);
         return $goodses;
@@ -67,17 +66,16 @@ class GoodsController extends Controller
      * @param  Request $request [注入Request实例]
      * @return [JsonObject]           [返回一个包含商品详细信息和商品轮播的json对象]
      */
-    public function show(Request $request)
+    public function show(Request $request, $id)
     {
-        $id = (int) $request->route()[2]['id'];
         $goods = new Goods();
         $goodsImgs = new GoodsImg();
         $goodsClasses = new GoodsClasses();
         $goodsInfo = $goods->getDetail($id);
-        if(empty($goodsInfo)) {
-            throw new ApiException('该商品已过期,请选择其他商品',config('error.goods_expire_err.code'));
+        if (empty($goodsInfo)) {
+            throw new ApiException(config('error.goods_empty_exception.msg'), config('error.goods_empty_exception.code'));
         }
-        if( time() < $goodsInfo->start_time) {
+        if ( time() < $goodsInfo->start_time) {
             $goodsInfo->status_text = '即将开售';
             $goodsDetail = [
                 'buy' => [
@@ -88,20 +86,45 @@ class GoodsController extends Controller
                     'text' => '加入购物车',
                     'can_click' => 0,
                     ],
+                'exp' => [
+                    'text' => null,
+                    'can_click' => 0,
+                    ],
+            ];
+        } else if (time() > $goodsInfo->end_time) {
+            $goodsInfo->status_text = null;
+            $goodsDetail = [
+                'buy' => [
+                    'text' => null,
+                    'can_click' => 0,
+                    ],
+                'car' => [
+                    'text' => null,
+                    'can_click' => 0,
+                    ],
+                'exp' => [
+                    'text' => '该商品已下价',
+                    'can_click' => 0,
+                    ],
             ];
         } else {
             $goodsInfo->status_text = null;
             $goodsDetail = [
                 'buy' => [
                     'text' => '立即购买',
-                    'can_click' => 0,
+                    'can_click' => 1,
                     ],
                 'car' => [
                     'text' => '加入购物车',
+                    'can_click' => 1,
+                    ],
+                'exp' => [
+                    'text' => null,
                     'can_click' => 0,
                     ],
             ];
         }
+        $goodsInfo->send_time = formatM($goodsInfo->send_time);
         $goodsInfo->start_time_text = formatTime($goodsInfo->start_time);
         $goodsInfo->end_time_text = formatTime($goodsInfo->end_time);
         $goodsInfo->leave_end_time_text  = formatD($goodsInfo->end_time);
@@ -109,7 +132,7 @@ class GoodsController extends Controller
         $goodsDetail['goods_imgs'] = array_map(function($img) {
             return $img['goods_img'];
         }, obj2arr($goodsImgs->mget($id)));
-        $goodsDetail['category'] = $goodsClasses->get($goodsInfo->id);
+        $goodsDetail['category'] = $goodsClasses->get($goodsInfo->classes_id);
         return $goodsDetail;
     }
 }

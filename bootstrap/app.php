@@ -25,9 +25,12 @@ $app = new Laravel\Lumen\Application(
 
 $app->configure('wx');
 $app->configure('error');
-$app->configure('database');
-$app->withFacades();
+$app->configure('file');
 
+// $app->withFacades();
+
+// $app->configure('database');
+$app->withFacades();
 // $app->withEloquent();
 
 /*
@@ -68,6 +71,8 @@ $app->singleton(
 
 $app->routeMiddleware([
     'my_auth' => \App\Http\Middleware\MyAuth::class,
+    'add_auth' => \App\Http\Middleware\AddAuth::class,
+    'get_auth' => \App\Http\Middleware\GetAuth::class,
 ]);
 
 /*
@@ -85,6 +90,8 @@ $app->routeMiddleware([
 // $app->register(App\Providers\AuthServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
 $app->register(Illuminate\Redis\RedisServiceProvider::class);
+$app->register(SimpleSoftwareIO\QrCode\QrCodeServiceProvider::class);
+$app->register(App\Providers\FileUploadServiceProvider::class);
 $app->register('App\Providers\RouteBindingServiceProvider');
 /*
 |--------------------------------------------------------------------------

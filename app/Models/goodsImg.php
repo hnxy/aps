@@ -2,22 +2,23 @@
 
 namespace App\Models;
 
-use DB;
+use App\Models\Db\GoodsImg as DbGoodsImg;
 
-class GoodsImg
+class GoodsImg extends Model
 {
-    public static $model = 'goods_img';
+    public static $model = 'GoodsImg';
     /**
      * [获取商品轮播的集合]
      * @param  [Integer] $id [商品id]
      * @return [Object]     [包含商品的轮播图的集合对象]
      */
-    public function mget($id)
+    public function mget($goodsId)
     {
-        $goods_imgs = app('db')->table(self::$model)
-        ->where(['goods_id' => $id])
-        ->select(['goods_img'])
-        ->get();
-        return $goods_imgs;
+        return DbGoodsImg::mget(['where' => ['goods_id' => $goodsId] ]);
+    }
+
+    public function add($arr)
+    {
+        DbGoodsImg::add($arr);
     }
 }
