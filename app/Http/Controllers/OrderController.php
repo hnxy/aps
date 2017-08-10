@@ -100,7 +100,7 @@ class OrderController extends Controller
             return config('error.addr_null_err');
         }
         // 获取购物车的信息,该返回的数据为对象数组
-        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
+        $goodsCars = $goodsCarModel->mgetByGoodsCarIdsWithStatus($user->id, $goodsCarIds);
         $coupon = $this->checkOrderArgs($goodsCars, $agentId, $payId, $goodsCarIds, $couponId, $user->id);
         try {
             app('db')->beginTransaction();

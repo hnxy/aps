@@ -30,7 +30,7 @@ class CouponController extends Controller
         array_pop($goodsCarIds);
         $goodsCarModel = new GoodsCar();
         $couponModel = new Coupon();
-        $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
+        $goodsCars = $goodsCarModel->mgetByGoodsCarIdsWithStatus($user->id, $goodsCarIds);
         if (count(obj2arr($goodsCars)) != count($goodsCarIds)) {
             throw new ApiException(config('error.goods_exception.msg'), config('error.goods_exception.code'));
         }

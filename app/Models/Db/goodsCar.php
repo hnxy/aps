@@ -21,7 +21,7 @@ class GoodsCar extends Model
                         ->update($arr['update']);
     }
 
-    public static function mgetByGoodsCarIds($userId, $goodsCarIds, $status)
+    public static function mgetByGoodsCarIdsWithStatus($userId, $goodsCarIds, $status)
     {
         return  app('db')->table(self::$model)
                          ->where([
@@ -68,5 +68,15 @@ class GoodsCar extends Model
         return app('db')->table(self::$model)
                         ->where(isset($arr['where']) ? $arr['where'] : [])
                         ->get();
+    }
+    public static function mgetByGoodsCarIds($userId, $goodsCarIds)
+    {
+        return  app('db')->table(self::$model)
+                         ->where([
+                            ['user_id', '=', $userId],
+                            ['is_del', '=', 0],
+                         ])
+                         ->whereIn('id', $goodsCarIds)
+                         ->get();
     }
 }

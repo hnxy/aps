@@ -63,9 +63,9 @@ class GoodsCar extends Model
      * @param  [Integer] $goodsCarIDs [购物车状态码]
      * @return [Array]              [购物车信息集合]
      */
-    public function mgetByGoodsCarIds($userId, $goodsCarIDs, $status = 0)
+    public function mgetByGoodsCarIdsWithStatus($userId, $goodsCarIDs, $status = 0)
     {
-        return  DbGoodsCar::mgetByGoodsCarIds($userId, $goodsCarIDs, $status);
+        return  DbGoodsCar::mgetByGoodsCarIdsWithStatus($userId, $goodsCarIDs, $status);
     }
     /**
      * [添加购物车信息]
@@ -182,6 +182,10 @@ class GoodsCar extends Model
             ['is_del', '=', 0],
         ];
         return DbGoodsCar::mgetByUserId($arr);
+    }
+    public function mgetByGoodsCarIds($userId, $goodsCarIDs)
+    {
+        return  DbGoodsCar::mgetByGoodsCarIds($userId, $goodsCarIDs);
     }
 }
 ?>
