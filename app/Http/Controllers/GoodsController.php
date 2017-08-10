@@ -124,7 +124,7 @@ class GoodsController extends Controller
                     ],
             ];
         }
-        $goodsInfo->send_time = formatM($goodsInfo->send_time);
+        $goodsInfo->send_time = '预计' . formatM($goodsInfo->send_time) . '发货';
         $goodsInfo->start_time_text = formatTime($goodsInfo->start_time);
         $goodsInfo->end_time_text = formatTime($goodsInfo->end_time);
         $goodsInfo->leave_end_time_text  = formatD($goodsInfo->end_time);

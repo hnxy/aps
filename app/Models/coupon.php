@@ -149,7 +149,7 @@ class Coupon extends Model
                 $allPrice += $goodsInfo->price * $goodsCarMap[$goodsInfo->id]->goods_num;
             }
             $allPrice -= $couponPrice;
-            $coupon['coupon_all_price'] = $couponPrice;
+            $coupon['coupon_all_price'] = '￥' .sprintf('%.2f', $couponPrice);
             $coupon['coupon_text'] = '您已优惠' . $couponPrice . '元';
             $coupon['all_price'] = sprintf('%0.2f', $allPrice);
         }
