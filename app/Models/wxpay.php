@@ -28,17 +28,17 @@ class WxPay extends Model
             'mch_id' => config('wx.shopid'),
             'device_info' => 'WEB',
             'nonce_str' => getRandomString(16),
-            'body' => '玩乐广厦Uit-海鲜',
+            'body' => config('wx.body'),
             'out_trade_no' => $combinePayId,
             'total_fee' => 1,//支付金额，单位为分
             'spbill_create_ip' => $_SERVER['REMOTE_ADDR'],
-            'notify_url' => 'http://aps.cg0.me/v1/order/recive',
+            'notify_url' => config('wx.notify_url'),
             'trade_type' => 'JSAPI',
             'openid' => $openid,
             'time_start' => date('YmdHis', $time),
             'time_expire' => date('YmdHis', $time + config('wx.order_work_time')),
             'fee_type' => 'CNY',
-            'attach' => '长沙58',
+            'attach' => '鲜农达',
             'sign_type' => 'MD5',
         ];
         $sign = $this->getSign($params);
@@ -64,7 +64,7 @@ class WxPay extends Model
         $paySign = $this->getSign($paySignParams);
         return [
             'appid' => config('wx.appid'),
-            'timestamp' => $time,
+            'timestamp' => strval($time),
             'nonce_str' => $nonceStr,
             'trade_type' => $rspArr['trade_type'],
             'prepay_id' => $rspArr['prepay_id'],
@@ -112,7 +112,7 @@ class WxPay extends Model
                 $coupon = $couponModel->getById($order['coupon_id']);
                 //防止该优惠券已经删除
                 if (!empty($coupon)) {
-                    $all -= $coupon->price;
+                    $all -= $coupon->price * $order['goods_num'];
                 }
             }
         }

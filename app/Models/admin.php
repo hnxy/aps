@@ -54,7 +54,7 @@ class Admin extends Model
         DbAdmin::update($arr);
         return ['id' => $user->id, 'token' => $token]   ;
     }
-    public function has($agentId)
+    public function has($adminId)
     {
         if(empty($admin = DbAdmin::get(['where' => ['id' => $adminId] ]))) {
             return false;

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Wx;
 use App\Models\Agent;
+use App\Models\Admin;
 use App\Exceptions\ApiException;
 
 class UserController extends Controller
@@ -84,7 +85,6 @@ class UserController extends Controller
     */
     public function login3(Request $request)
     {
-
         // $urlArr = parse_url($myCallback);
         // if (!in_array($urlArr['host'], config('wx.host'))) {
         //     throw new ApiException(config('error.callback_illegal.msg'), config('error.callback_illegal.code'));
@@ -96,6 +96,13 @@ class UserController extends Controller
                 throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
             }
             $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?agent_id=' . urlencode($agentId);
+        }  else if ($request->has('admin_id')) {
+            $adminId = $request->input('admin_id');
+            $adminModel = new Admin();
+            if (!$adminModel->has($adminId)) {
+                throw new ApiException(config('error.not_work_admin_exception.msg'), config('error.not_work_admin_exception.code'));
+            }
+            $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?admin_id=' . urlencode($adminId);
         } else {
             $myCallback = $request->input('my_callback', config('wx.index'));
             $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?my_callback=' . urlencode($myCallback);
@@ -134,7 +141,7 @@ class UserController extends Controller
             if(!$wx->checkAccessTokenWork($userInfo->access_token, $userInfo->openid)) {
                 //刷新access_token,刷新失败则重新授权
                 if(($rspMsp = $wx->refreshAccesstoken($userInfo->refresh_token)) === false) {
-                    return redirect(url('/v1/login3'));
+                    return redirect('http://aps.cg0.me/v1/login3');
                 }
                 $userInfo->openid = $rspMsp['openid'];
                 $userInfo->access_token = $rspMsp['web_access_token'];
@@ -149,16 +156,11 @@ class UserController extends Controller
         $userInfo = $user->loginBy3($userMsg);
         //有代理id
         if ($request->has('agent_id')) {
-            $agentModel = new Agent();
-            if (($agent = $agentModel->hasApply($userInfo->id)) !== false) {
-                if ($agent->review == 0) {
-                    throw new ApiException(config('error.agent_has_apply.msg'), config('error.agent_has_apply.code'));
-                } else if ($agent->review == 1) {
-                    throw new ApiException(config('error.is_agent.msg'), config('error.is_agent.code'));
-                }
-            }
             $agentId = $request->input('agent_id');
-            return $this->resolveAgent($userInfo, $agentId);
+            return $this->resolveAgent($userInfo, $agentId, 2);
+        } else if($request->has('admin_id')) {
+            $adminId = $request->input('admin_id');
+            return $this->resolveAgent($userInfo, $adminId, 1);
         }
         $callback = $request->input('my_callback');
         return $this->resolveUser($userInfo, $callback);
@@ -168,6 +170,7 @@ class UserController extends Controller
         $params = [
             'token' => $userInfo->token,
             'uid' => $userInfo->id,
+            'from_agent_id' => $userInfo->agent_id,
         ];
         $callbackArr = explode('#', $callback);
         if (strpos($callbackArr[1], '?') === false) {
@@ -176,12 +179,20 @@ class UserController extends Controller
             return redirect($callback . '&' . http_build_query($params));
         }
     }
-    protected function resolveAgent($userInfo, $agentId)
+    protected function resolveAgent($userInfo, $agentId, $level)
     {
         $agentModel = new Agent();
+        if (($agent = $agentModel->hasApply($userInfo->id)) !== false) {
+            if ($agent->review == 0) {
+                throw new ApiException(config('error.agent_has_apply.msg'), config('error.agent_has_apply.code'));
+            } else if ($agent->review == 1) {
+                throw new ApiException(config('error.is_agent.msg'), config('error.is_agent.code'));
+            }
+        }
         $agentModel->add([
             'user_id' => $userInfo->id,
             'created_by' => $agentId,
+            'level' => $level,
             ]);
         return config('error.success');
     }

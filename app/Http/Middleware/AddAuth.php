@@ -7,7 +7,7 @@ use Illuminate\Routing\Router;
 use App\Exceptions\ApiException;
 
 
-class GetAuth
+class AddAuth
 {
     /**
      * Handle an incoming request.

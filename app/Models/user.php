@@ -103,4 +103,10 @@ class User extends Model
         }
         return $user;
     }
+    public function mgetByIds($userIds = [])
+    {
+        $arr['whereIn']['key'] = 'id';
+        $arr['whereIn']['values'] = $userIds;
+        return DbUser::mget($arr);
+    }
 }

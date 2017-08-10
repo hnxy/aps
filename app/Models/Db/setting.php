@@ -10,4 +10,10 @@ class Setting extends Model
         return app('db')->table(self::$model)
                         ->insert($arr);
     }
+    public static function get($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->first();
+    }
 }

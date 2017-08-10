@@ -63,14 +63,10 @@ class GoodsCar extends Model
                         ->where($arr['where'])
                         ->first();
     }
-    public static function getAllNum($userId)
+    public static function mgetByUserId($arr)
     {
         return app('db')->table(self::$model)
-                        ->where([
-                            ['user_id', '=', $userId],
-                            ['status', '=', 0],
-                            ['is_del', '=', 0],
-                        ])
-                        ->count();
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->get();
     }
 }

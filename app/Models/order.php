@@ -64,6 +64,7 @@ class Order extends Model
         $time = time();
         $sendTime = 99999999999;
         $timespace = 999;
+        $couponModel = new Coupon();
         foreach ($goodsCars as $goodsCar) {
             $goodsIds[] = $goodsCar->goods_id;
         }
@@ -89,7 +90,6 @@ class Order extends Model
         $sendTime = formatY($sendTime);
         return [
             'send_time' => ["预计{$sendTime}发货", "预计{$timespace}天后到货"],
-            'coupon' => '暂无可用的优惠码',
             'price_info' => $priceInfos,
             'goods_car_info' => $goodsCarInfos,
         ];
@@ -157,11 +157,12 @@ class Order extends Model
         foreach ($orders as $order) {
             $allPrice = 0;
             $goods = $goodsMap[$order->goods_id];
-            $allPrice += sprintf('%.2f', $goods->price*$order->goods_num);
+            // $allPrice += sprintf('%.2f', $goods->price*$order->goods_num);
             $orderInfo = $this->formatOrder($order);
             $goodsInfo = $this->formatGoods($order, $goods);
             $express = $this->getExpress($order->express_id);
-            $allPrice = $this->getAllPriceByCouponId($order->coupon_id, $allPrice)['allPrice'];
+            $couponPrice = $this->getPriceByCouponId($order->coupon_id)['couponPrice'];
+            $allPrice = sprintf('%.2f', ($goods->price - $couponPrice) * $order->goods_num);
             $goodsInfo['value'] = '￥'.$allPrice;
             $sendPrice = sprintf('%.2f', $order->send_price);
             $sendTime = formatTime($goods->send_time);
@@ -180,16 +181,17 @@ class Order extends Model
         }
         return $orderInfos;
     }
-    protected function getAllPriceByCouponId($couponId, $allPrice)
+    protected function getPriceByCouponId($couponId)
     {
         $coupon = null;
+        $couponPrice = 0;
         if(!is_null($couponId)) {
             $coupon = (new Coupon())->getById($couponId);
             if (!empty($coupon)) {
-                $allPrice -= $coupon->price;
+                $couponPrice = $coupon->price;
             }
         }
-        return ['allPrice' => sprintf('%.2f', $allPrice), 'coupon' => $coupon];
+        return ['couponPrice' => $couponPrice, 'coupon' => $coupon];
     }
     protected function formatGoods($order, $goods)
     {
@@ -199,7 +201,7 @@ class Order extends Model
                 'goods_desc' => $goods->description,
                 'num' => $order->goods_num,
                 'unit' => $goods->unit,
-                'goods_img' => $goods->goods_img,
+                'goods_img' => $goods->goods_order_img,
             ];
 
         if($goods->end_time < time()) {
@@ -359,7 +361,8 @@ class Order extends Model
         if (is_null($goodsInfo)) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
-        $allPrice = $this->getAllPriceByCouponId($order->coupon_id, $goodsInfo->price*$order->goods_num)['allPrice'];
+        $couponPrice = $this->getPriceByCouponId($order->coupon_id, $goodsInfo->price*$order->goods_num)['couponPrice'];
+        $allPrice = sprintf('%.2f', ($goodsInfo->price - $couponPrice) * $order->goods_num);
         $sendTime = formatY($goodsInfo->send_time);
         $express = $this->getExpress($order->express_id);
         //支付相关
@@ -504,10 +507,9 @@ class Order extends Model
             $payment = $paymentModel->get($order->pay_id);
             $allPrice = 0;
             $goods = $goodsMap[$order->goods_id];
-            $allPrice += sprintf('%.2f', $goods->price*$order->goods_num);
-            $arr = $this->getAllPriceByCouponId($order->coupon_id, $allPrice);
+            $arr = $this->getPriceByCouponId($order->coupon_id);
             $coupon = $arr['coupon'];
-            $allPrice = $arr['allPrice'];
+            $allPrice = sprintf('%.2f', ($goods->price - $arr['couponPrice']) * $order->goods_num);
             $orderInfos[] =[
                 'id' => $order->id,
                 'order_num' => $order->order_num,
@@ -529,9 +531,10 @@ class Order extends Model
         if (is_null($goods)) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
-        $arr = $this->getAllPriceByCouponId($order->coupon_id, $goods->price*$order->goods_num);
+        $allPrice = $goods->price*$order->goods_num;
+        $arr = $this->getPriceByCouponId($order->coupon_id);
         $coupon = $arr['coupon'];
-        $allPrice = $arr['allPrice'];
+        $allPrice = sprintf('%.2f', ($goods->price - $arr['couponPrice']) * $order->goods_num);
         $payment = $paymentModel->get($order->pay_id);
         return [
             'id' => $order->id,
@@ -548,7 +551,7 @@ class Order extends Model
     {
         $arr['where'] = [['agent_id', '=', $searchId]];
         $arr['whereIn']['key'] = 'order_status';
-        $arr['whereIn']['values'] = [self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']];
+        $arr['whereIn']['values'] = [self::orderStatus['WAIT_SEND'], self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']];
         return DbOrder::all($arr);
     }
     public function getTrade($agentId, $start, $end)

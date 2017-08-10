@@ -54,22 +54,24 @@ class GoodsController extends Controller
             throw new ApiException(config('error.goods_empty_exception.msg'), config('error.goods_empty_exception.code'));
         }
         $imgs = $upload->save('image');
-        if (is_array($imgs)) {
+        if (count($imgs) != count($imgs, 1)) {
             $arr = [];
-            foreach ($imgs as $img) {
-                $fullname = $img['path'] . '/' . $img['filename'];
+            foreach ($imgs as &$img) {
+                $fullname = 'http://' . config('wx.host') . config('wx.image_visit_path') . '/goods/' . $img['filename'];
                 $arr[] = [
                     'goods_id' => $goodsId,
                     'goods_img' => $fullname,
                 ];
+                $img['visit_path'] = $fullname;
             }
-            $goodsImgModel->add($arr);
+            // $goodsImgModel->add($arr);
         } else {
-            $fullname = $imgs['path'] . '/' . $imgs['filename'];
-            $goodsImgModel->add([
-                'goods_id' => $goodsId,
-                'goods_img' => $fullname,
-            ]);
+            $fullname = 'http://' . config('wx.host') . config('wx.image_visit_path') . '/goods/' . $img['filename'];
+            // $goodsImgModel->add([
+            //     'goods_id' => $goodsId,
+            //     'goods_img' => $fullname,
+            // ]);
+            $imgs['visit_path'] = $fullname;
         }
         return $imgs;
     }

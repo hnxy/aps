@@ -1,7 +1,7 @@
 <?php
 
 $app->get('/ping', 'PingController@ping');
-$app->get('check', 'UserController@check');
+$app->get('/check', 'UserController@check');
 $app->group(['prefix' => '/v1'], function () use ($app) {
     $app->get('/js_api_params', 'JsApiController@getParams');
     $app->get('login3', 'UserController@login3');
@@ -65,10 +65,17 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
     //代理后台相关
     $app->group(['prefix' => '/agent', 'namespace' => 'Agent'], function() use ($app) {
         $app->post('/login', 'UserController@login');
-        $app->get('/', 'UserController@index');
         $app->group(['prefix' => '/{agent_id}', 'where' => ['agent_id' => '[0-9]{1,11}'], 'middleware' => ['my_auth'] ], function () use ($app) {
             $app->group(['middleware' => ['get_auth'] ], function () use ($app) {
-                $app->get('/qr', 'UserController@getQrcode');
+                $app->get('/', 'UserController@get');
+                $app->group(['prefix' => '/sub_agent'], function () use ($app) {
+                    $app->get('/', 'UserController@index');
+                    $app->group(['prefix' => '/{sub_agent_id}', 'where' => ['sub_agent_id' => '[0-9]{1, 11}']], function () use ($app) {
+                        $app->get('/', 'UserController@show');
+                    });
+                });
+                $app->post('/agent_qr', 'UserController@createAgentQrcode');
+                $app->post('/share_qr', 'UserController@createShareQrcode');
                 $app->group(['prefix' => '/order'], function() use ($app) {
                     $app->get('/', 'OrderController@index');
                     $app->get('/trade', 'OrderController@trade');
@@ -79,6 +86,10 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
             });
             $app->group(['middleware' => ['add_auth']], function () use ($app) {
                 $app->post('/', 'UserController@store');
+                $app->group(['prefix' => '/sub_agent/{sub_agent_id}', 'where' => ['sub_agent_id' => '[0-9]{1, 11}']], function () use ($app) {
+                        $app->put('/', 'UserController@update');
+                        $app->delete('/', 'UserController@delete');
+                });
             });
             $app->group(['prefix' => '/coupon'], function() use ($app) {
                 $app->get('/', 'CouponController@index');
@@ -99,6 +110,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
                     $app->post('/img', 'GoodsController@saveImg');
                 });
             });
+            $app->post('/agent_qr', 'UserController@createAgentQrcode');
             //订单相关
             $app->group(['prefix' => '/order'], function() use ($app) {
                 $app->get('/', 'OrderController@index');

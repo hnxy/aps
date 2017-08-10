@@ -13,6 +13,12 @@ class User extends Model
 
     public static function mget($arr = [])
     {
+        if (isset($arr['whereIn'])) {
+            return app('db')->table(self::$model)
+                            ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
+                            ->where(isset($arr['where']) ? $arr['where'] : [])
+                            ->get();
+        }
         return app('db')->table(self::$model)->where(isset($arr['where']) ? $arr['where'] : [])->get();
     }
     /**

@@ -174,9 +174,14 @@ class GoodsCar extends Model
                 ['id', '=', $id],
             ]]);
     }
-    public function getAllNum($userId)
+    public function mgetByUserId($userId)
     {
-        return DbGoodsCar::getAllNum($userId);
+        $arr['where'] = [
+            ['user_id', '=', $userId],
+            ['status', '=', 0],
+            ['is_del', '=', 0],
+        ];
+        return DbGoodsCar::mgetByUserId($arr);
     }
 }
 ?>

@@ -29,7 +29,7 @@
         'get_ticket_fail' => ['msg' => '获取js_ticket失败', 'code' => 25],
         'wx_version_low' => ['msg' => '您的微信版本过低,暂不能支付', 'code' => 26],
         'notify_fail' => ['msg' => '通知失败', 'code' => 27],
-        'coupon_has_been_used_exception' => ['msg' => '您已使用过该优惠券', 'code' => 28],
+        'agent_can_not_remove' => ['msg' => '该代理不能删除', 'code' => 28],
         'addr_not_work' => ['code' => 29, 'msg' => '该地址不合法' ],
         'addr_rm_fail' => ['code' => 30, 'msg' => '删除地址失败' ],
         'addr_set_fail' => ['code' => 31, 'msg' => '设置默认地址失败' ],
@@ -38,7 +38,7 @@
         'order_not_exist' => ['code' => 34, 'msg' => '该订单不存在' ],
         'order_rm_fail' => ['code' => 35, 'msg' => '删除订单失败' ],
         'order_cannot_finish' => ['code' => 36, 'msg' => '该订单无法完成收货' ],
-         'addr_not_exist' => ['code' => 37, 'msg' => '地址不存在' ],
+        'addr_not_exist' => ['code' => 37, 'msg' => '地址不存在' ],
         'order_no_cancel' => ['code' => 38, 'msg' => '该订单不能取消' ],
         'order_cannot_cancel' => ['code' => 39, 'msg' => '该订单不能删除' ],
         'goods_car_rm_fail' => ['code' => 40, 'msg' => '购物车删除失败' ],
@@ -47,5 +47,7 @@
         'express_exception' => ['code' => 43, 'msg' => '不存在该快递信息' ],
         'agent_has_apply' => ['code' => 44, 'msg' => '您已经申请过, 目前还在审核中' ],
         'is_agent' => ['code' => 45, 'msg' => '您已经是代理了' ],
+        'not_work_admin_exception' => ['msg' => '该管理员不存在', 'code' => 46],
+        'can_not_review' => ['msg' => '该代理不能审核', 'code' => 47],
     ];
 ?>

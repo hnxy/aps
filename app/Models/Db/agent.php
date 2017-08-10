@@ -27,8 +27,26 @@ class Agent extends Model
     {
         return app('db')->table(self::$model)
                         ->where(isset($arr['where']) ? $arr['where'] : [])
-                        ->select('id', 'username')
+                        ->select('id', 'username', 'user_id', 'review', 'level', 'is_detail', 'id_num', 'phone', 'address')
                         ->get();
+    }
+    public static function getAll($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->count();
+    }
+    public static function modify($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->update($arr['update']);
+    }
+    public static function remove($arr = [])
+    {
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->update(['is_del' => 1]);
     }
 }
 

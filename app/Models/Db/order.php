@@ -104,7 +104,6 @@ class Order extends Model
         return app('db')->table(self::$model)
                         ->where([
                             ['agent_id', '=', $agentId],
-                            ['is_del', '=', 0],
                         ])
                         ->whereBetween('created_at', [$start, $end])
                         ->whereIn('order_status', [self::orderStatus['WAIT_SEND'], self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']])

@@ -41,7 +41,7 @@ class OrderController extends Controller
         // 获取购物车的信息,该返回的数据为对象数组
         $goodsCars = $goodsCarModel->mgetByGoodsCarIds($user->id, $goodsCarIds);
         $this->checkGoodsCarWork($goodsCars, $goodsCarIds);
-        if ( ($addrDetail = $this->hasAddr($user->id, $addrId)) === false) {
+        if (($addrDetail = $this->hasAddr($user->id, $addrId)) === false) {
             return config('error.addr_not_exist');
         }
         return [
@@ -90,7 +90,7 @@ class OrderController extends Controller
         $payId = $request->input('pay_id');
         $addrId = $request->input('addr_id', null);
         $couponId = $request->input('coupon_id', null);
-        $agentId = $request->input('agent_id', null);
+        $agentId = $request->input('from_agent_id', null);
         $orderModel = new Order();
         $addressModel = new Address();
         $goodsModel = new Goods();
@@ -107,10 +107,11 @@ class OrderController extends Controller
             // 更新购物车的状态
             $goodsCarModel->updateStatus($user->id, $goodsCarIds, 1);
             //更新商品的库存
-            $goodsModel->modifyStock(array_column(obj2arr($goodsCars), 'goods_num', 'goods_id'), 'decrement');
+            $goodsMap = array_column(obj2arr($goodsCars), 'goods_num', 'goods_id');
+            $goodsModel->modifyStock($goodsMap, 'decrement');
             //更新优惠券使用次数
             if(!empty($coupon)) {
-               $couponModel->modifyById($couponId);
+               $couponModel->modifyTimesById($couponId, $goodsMap[$coupon['goods_id']]['goods_num']);
             }
             //创建订单
             $time = time();
@@ -171,13 +172,13 @@ class OrderController extends Controller
             throw new ApiException(config('error.pay_not_work_exception.msg'), config('error.pay_not_work_exception.code'));
         }
     }
-    private function checkCouponWork($couponId, $agentId, $goodsIds, $userId)
+    private function checkCouponWork($couponId, $goodsIds, $userId)
     {
         //检查优惠码是否有效
         $coupon = null;
         $couponModel = new Coupon();
         if (!is_null($couponId)) {
-            if (is_null($agentId) || !($coupon = $couponModel->checkWork($couponId, 'id', $goodsIds, $agentId, $userId))) {
+            if (!($coupon = $couponModel->checkWork($couponId, 'id', $goodsIds, $userId))) {
             throw new ApiException(config('error.not_work_coupon_exception.msg'), config('error.not_work_coupon_exception.code'));
             }
         }
@@ -194,7 +195,7 @@ class OrderController extends Controller
         $this->checkPayEnable($payId);
          //检查优惠码是否可用
         $goodsIds = array_column(obj2arr($goodsCars), 'goods_id');
-        $coupon = $this->checkCouponWork($couponId, $agentId, $goodsIds, $userId);
+        $coupon = $this->checkCouponWork($couponId, $goodsIds, $userId);
         //检查代理是否存在
         if (!is_null($agentId)) {
             if (!$agentModel->has($agentId)) {

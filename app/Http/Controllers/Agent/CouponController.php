@@ -24,9 +24,9 @@ class CouponController extends Controller
         $page = $request->input('page', 1);
         $couponModel = new Coupon();
         $rsp = config('error.items');
-        $rsp['items'] = $couponModel->getItems($agent->id, $limit, $page);
+        $rsp['items'] = $couponModel->getItems($limit, $page);
         $rsp['num'] = count($rsp['items']);
-        $totel = $couponModel->getAll($agent->id);
+        $totel = $couponModel->getAll();
         $rsp['totel'] = $totel;
         $rsp['pages'] = intval($totel/$limit) + ($totel % $limit == 0 ? 0 : 1);
         return $rsp;

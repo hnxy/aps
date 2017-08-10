@@ -139,7 +139,9 @@
         $diff = $timestamp - time();
         $D =  intval($diff/86400);
         $H = intval($diff%86400/3600);
-        return $D.'天'.$H.'小时';
+        $I = intval($diff%86400%3600/60);
+        $S = intval($diff%86400%3600%60);
+        return $D . '天' . $H . '小时' . $I . '分' . $S . '秒';
     }
         /**
      *  post提交数据

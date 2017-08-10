@@ -33,13 +33,13 @@ class Coupon extends Model
         return app('db')->table(self::$model)
                         ->insert($arr);
     }
-    public static function modifyById($id)
+    public static function modifyTimesById($id, $times)
     {
         return app('db')->table(self::$model)
                         ->where([
                             ['id', '=', $id],
                         ])
-                        ->increment('times');
+                        ->increment('times', $times);
     }
     public static function modify($arr)
     {
@@ -53,11 +53,17 @@ class Coupon extends Model
                         ->where($arr['where'])
                         ->update(['is_del' => 1]);
     }
-    public static function all($arr)
+    public static function all($arr = [])
     {
         return app('db')->table(self::$model)
                         ->where(isset($arr['where']) ? $arr['where'] : [])
                         ->count('id');
+    }
+    public static function getByGoodsIds($goodsIds)
+    {
+        return app('db')->table(self::$model)
+                        ->whereIn('goods_id', $goodsIds)
+                        ->get();
     }
 }
 

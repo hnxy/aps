@@ -132,7 +132,7 @@ class GoodsController extends Controller
         $goodsDetail['goods_imgs'] = array_map(function($img) {
             return $img['goods_img'];
         }, obj2arr($goodsImgs->mget($id)));
-        $goodsDetail['category'] = $goodsClasses->get($goodsInfo->id);
+        $goodsDetail['category'] = $goodsClasses->get($goodsInfo->classes_id);
         return $goodsDetail;
     }
 }

@@ -116,7 +116,13 @@ class GoodsCarController extends Controller
     public function getAll(Request $request, $user)
     {
         $rsp = config('error.success');
-        $rsp['num'] = (new GoodsCar())->getAllNum($user->id);
+        $goodsCarModel = new GoodsCar();
+        $goodsCars = $goodsCarModel->mgetByUserId($user->id);
+        $totel = 0;
+        foreach ($goodsCars as $goodsCar) {
+            $totel += $goodsCar->goods_num;
+        }
+        $rsp['num'] = $totel;
         return $rsp;
     }
 }
