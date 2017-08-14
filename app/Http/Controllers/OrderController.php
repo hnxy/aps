@@ -387,11 +387,7 @@ class OrderController extends Controller
     public function recive()
     {
         $notify = file_get_contents('php://input');
-        // $fp = fopen('test', 'wb+');
-        // fwrite($fp, $notify);
-        // fclose($fp);
         $notifyObj = obj2arr(simplexml_load_string($notify, 'SimpleXMLElement', LIBXML_NOCDATA));
-        // $notifyObj = obj2arr(simplexml_load_file('/MyApp/aps/public/test', 'SimpleXMLElement', LIBXML_NOCDATA));
         if (array_key_exists("return_code", $notifyObj) &&  $notifyObj['return_code'] != 'SUCCESS') {
             $this->reply('Fail', $notifyObj['return_msg']);
             return ;

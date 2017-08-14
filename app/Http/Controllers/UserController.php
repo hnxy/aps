@@ -95,17 +95,17 @@ class UserController extends Controller
             if (!$agentModel->has($agentId)) {
                 throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
             }
-            $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?agent_id=' . urlencode($agentId);
+            $callbackUrl = 'http://aps.greennesstime.com/v1/login3_callback?agent_id=' . urlencode($agentId);
         }  else if ($request->has('admin_id')) {
             $adminId = $request->input('admin_id');
             $adminModel = new Admin();
             if (!$adminModel->has($adminId)) {
                 throw new ApiException(config('error.not_work_admin_exception.msg'), config('error.not_work_admin_exception.code'));
             }
-            $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?admin_id=' . urlencode($adminId);
+            $callbackUrl = 'http://aps.greennesstime.com/v1/login3_callback?admin_id=' . urlencode($adminId);
         } else {
             $myCallback = $request->input('my_callback', config('wx.index'));
-            $callbackUrl = 'http://aps.cg0.me/v1/login3_callback?my_callback=' . urlencode($myCallback);
+            $callbackUrl = 'http://aps.greennesstime.com/v1/login3_callback?my_callback=' . urlencode($myCallback);
         }
         $params = array(
             'appid'=> config('wx.appid'),
@@ -141,7 +141,7 @@ class UserController extends Controller
             if(!$wx->checkAccessTokenWork($userInfo->access_token, $userInfo->openid)) {
                 //刷新access_token,刷新失败则重新授权
                 if(($rspMsp = $wx->refreshAccesstoken($userInfo->refresh_token)) === false) {
-                    return redirect('http://aps.cg0.me/v1/login3');
+                    return redirect('http://aps.greennesstime.com/v1/login3');
                 }
                 $userInfo->openid = $rspMsp['openid'];
                 $userInfo->access_token = $rspMsp['web_access_token'];
@@ -172,7 +172,6 @@ class UserController extends Controller
             'uid' => $userInfo->id,
             'from_agent_id' => $userInfo->agent_id,
         ];
-<<<<<<< HEAD
         $callbackArr = explode('#', $callback);
         if (strpos($callbackArr[1], '?') === false) {
             return redirect($callback . '?' . http_build_query($params));
@@ -196,13 +195,6 @@ class UserController extends Controller
             'level' => $level,
             ]);
         return config('error.success');
-=======
-        if (strpos($callback, '?') === false) {
-            return redirect($callback.'?'.http_build_query($params));
-        } else {
-            return redirect($callback.'&'.http_build_query($params));
-        }
->>>>>>> cb481610ae93f96781b3f7353afea62b5eacfdf6
     }
 }
 ?>

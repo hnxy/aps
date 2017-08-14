@@ -63,7 +63,7 @@ class Agent extends Model
             'last_ip' => $userArr['last_ip'],
             ];
         DbAgent::update($arr);
-        return ['id' => $user->id, 'token' => $token]   ;
+        return ['id' => $user->id, 'token' => $token, 'level' => $user->level];
     }
     public function has($agentId)
     {
