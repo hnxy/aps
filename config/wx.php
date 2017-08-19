@@ -5,7 +5,7 @@
         'shopid' => '1485838782',
         'apiSecret' => '192006250b4c09247ec02edce69f5a1a',
         'appSecret' => '693d4dadacd6aa7b08aa2dc1e723e3a5',
-        'index' => 'http://xnd.greennesstime.com/?#/',
+        'index' => 'http://greennesstime.com/?#/',
         'EBusinessID' => '1293532',
         'AppKey' => '7266fdfe-70a1-47ba-b3e5-2c99ebdf70dc',
         'ReqURL' => 'http://api.kdniao.cc/Ebusiness/EbusinessOrderHandle.aspx',
@@ -15,7 +15,8 @@
         'express_offic_phone' => ['SF' => '0731-55820626'],
         'order_work_time' => 12*3600,//以秒为单位
         'max_goods_num' => 999,
-        'host' => 'xnd.greennesstime.com',
+        'host' => 'greennesstime.com',
+        'back_host' => 'aps.greennesstime.com',
         'notify_url' => 'http://aps.greennesstime.com/v1/order/recive',
         'body' => '鲜农达-商品',
         'qrcode_path' => env('DOWN_LOAD_FILE') . '/iamges/qr_code',

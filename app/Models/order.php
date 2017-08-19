@@ -202,6 +202,7 @@ class Order extends Model
                 'num' => $order->goods_num,
                 'unit' => $goods->unit,
                 'goods_img' => $goods->goods_order_img,
+                'goods_price' => $goods->price,
             ];
 
         if($goods->end_time < time()) {

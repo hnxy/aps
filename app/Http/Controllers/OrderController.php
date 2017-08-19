@@ -427,11 +427,10 @@ class OrderController extends Controller
         }
         //获取总金额
         $all = $payModel->getAll($goodses, obj2arr($orders));
-        // 这里要*100的测试先不乘
-        // if ($all * 100 != $notifyObj['total_fee']) {
-        //     $this->reply('Fail', '订单金额不一致');
-        //     return;
-        // }
+        if ($all * 100 != $notifyObj['total_fee']) {
+            $this->reply('Fail', '订单金额不一致');
+            return;
+        }
         $payTime = $notifyObj['time_end'];
         $transactionId = $notifyObj['transaction_id'];
         $this->waitSend($orderIds, $payTime, $transactionId);
