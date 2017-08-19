@@ -74,8 +74,6 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
                         $app->get('/', 'UserController@show');
                     });
                 });
-                $app->post('/agent_qr', 'UserController@createAgentQrcode');
-                $app->post('/share_qr', 'UserController@createShareQrcode');
                 $app->group(['prefix' => '/order'], function() use ($app) {
                     $app->get('/', 'OrderController@index');
                     $app->get('/trade', 'OrderController@trade');
@@ -84,6 +82,8 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
                     });
                 });
             });
+            $app->post('/agent_qr', 'UserController@createAgentQrcode');
+            $app->post('/share_qr', 'UserController@createShareQrcode');
             $app->group(['middleware' => ['add_auth']], function () use ($app) {
                 $app->post('/', 'UserController@store');
                 $app->group(['prefix' => '/sub_agent/{sub_agent_id}', 'where' => ['sub_agent_id' => '[0-9]{1, 11}']], function () use ($app) {

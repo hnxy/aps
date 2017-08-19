@@ -46,6 +46,7 @@ class UserController extends Controller
     public static function get(Request $request, $user)
     {
         header('Content-Type:applicate/json');
+        $user->nickname = json_decode($user->nickname);
         return $user;
     }
 
@@ -95,17 +96,17 @@ class UserController extends Controller
             if (!$agentModel->has($agentId)) {
                 throw new ApiException(config('error.not_work_agent_exception.msg'), config('error.not_work_agent_exception.code'));
             }
-            $callbackUrl = 'http://aps.greennesstime.com/v1/login3_callback?agent_id=' . urlencode($agentId);
+            $callbackUrl = 'http://' . config('wx.back_host') . '/v1/login3_callback?agent_id=' . urlencode($agentId);
         }  else if ($request->has('admin_id')) {
             $adminId = $request->input('admin_id');
             $adminModel = new Admin();
             if (!$adminModel->has($adminId)) {
                 throw new ApiException(config('error.not_work_admin_exception.msg'), config('error.not_work_admin_exception.code'));
             }
-            $callbackUrl = 'http://aps.greennesstime.com/v1/login3_callback?admin_id=' . urlencode($adminId);
+            $callbackUrl = 'http://' . config('wx.back_host') . '/v1/login3_callback?admin_id=' . urlencode($adminId);
         } else {
             $myCallback = $request->input('my_callback', config('wx.index'));
-            $callbackUrl = 'http://aps.greennesstime.com/v1/login3_callback?my_callback=' . urlencode($myCallback);
+            $callbackUrl = 'http://' . config('wx.back_host') . '/v1/login3_callback?my_callback=' . urlencode($myCallback);
         }
         $params = array(
             'appid'=> config('wx.appid'),
@@ -141,7 +142,7 @@ class UserController extends Controller
             if(!$wx->checkAccessTokenWork($userInfo->access_token, $userInfo->openid)) {
                 //刷新access_token,刷新失败则重新授权
                 if(($rspMsp = $wx->refreshAccesstoken($userInfo->refresh_token)) === false) {
-                    return redirect('http://aps.greennesstime.com/v1/login3');
+                    return redirect('http://' . config('wx.back_host') . '/v1/login3');
                 }
                 $userInfo->openid = $rspMsp['openid'];
                 $userInfo->access_token = $rspMsp['web_access_token'];

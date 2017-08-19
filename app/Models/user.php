@@ -73,7 +73,7 @@ class User extends Model
                     'access_token' => $userInfo3['access_token'],
                     'refresh_token' => $userInfo3['refresh_token'],
                     'code' => $userInfo3['code'],
-                    'nickname' => $userInfo3['nickname'],
+                    'nickname' => json_encode($userInfo3['nickname']),
                 ];
             DbUser::add($arr);
             return DbUser::get(['where' => ['openid' => $userInfo3['openid']]]);
@@ -89,7 +89,7 @@ class User extends Model
                 'access_token' => $userInfo3['access_token'],
                 'refresh_token' => $userInfo3['refresh_token'],
                 'code' => $userInfo3['code'],
-                'nickname' => $userInfo3['nickname'],
+                'nickname' => json_encode($userInfo3['nickname']),
             ];
             DbUser::updateByOpenid($user->openid, $arr);
             return DbUser::get(['where' => ['openid' => $userInfo3['openid'] ] ]);

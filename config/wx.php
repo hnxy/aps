@@ -16,6 +16,7 @@
         'order_work_time' => 12*3600,//以秒为单位
         'max_goods_num' => 999,
         'host' => 'greennesstime.com',
+        'back_host' => 'aps.greennesstime.com',
         'notify_url' => 'http://aps.greennesstime.com/v1/order/recive',
         'body' => '鲜农达-商品',
         'qrcode_path' => env('DOWN_LOAD_FILE') . '/iamges/qr_code',

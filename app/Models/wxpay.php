@@ -30,7 +30,7 @@ class WxPay extends Model
             'nonce_str' => getRandomString(16),
             'body' => config('wx.body'),
             'out_trade_no' => $combinePayId,
-            'total_fee' => 1,//支付金额，单位为分
+            'total_fee' => $all * 100,//支付金额，单位为分
             'spbill_create_ip' => $_SERVER['REMOTE_ADDR'],
             'notify_url' => config('wx.notify_url'),
             'trade_type' => 'JSAPI',

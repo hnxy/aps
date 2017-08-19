@@ -387,11 +387,7 @@ class OrderController extends Controller
     public function recive()
     {
         $notify = file_get_contents('php://input');
-        // $fp = fopen('test', 'wb+');
-        // fwrite($fp, $notify);
-        // fclose($fp);
         $notifyObj = obj2arr(simplexml_load_string($notify, 'SimpleXMLElement', LIBXML_NOCDATA));
-        // $notifyObj = obj2arr(simplexml_load_file('/MyApp/aps/public/test', 'SimpleXMLElement', LIBXML_NOCDATA));
         if (array_key_exists("return_code", $notifyObj) &&  $notifyObj['return_code'] != 'SUCCESS') {
             $this->reply('Fail', $notifyObj['return_msg']);
             return ;
@@ -431,11 +427,10 @@ class OrderController extends Controller
         }
         //获取总金额
         $all = $payModel->getAll($goodses, obj2arr($orders));
-        // 这里要*100的测试先不乘
-        // if ($all * 100 != $notifyObj['total_fee']) {
-        //     $this->reply('Fail', '订单金额不一致');
-        //     return;
-        // }
+        if ($all * 100 != $notifyObj['total_fee']) {
+            $this->reply('Fail', '订单金额不一致');
+            return;
+        }
         $payTime = $notifyObj['time_end'];
         $transactionId = $notifyObj['transaction_id'];
         $this->waitSend($orderIds, $payTime, $transactionId);
