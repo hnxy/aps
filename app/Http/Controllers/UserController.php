@@ -46,8 +46,11 @@ class UserController extends Controller
     public static function get(Request $request, $user)
     {
         header('Content-Type:applicate/json');
-        $user->nickname = json_decode($user->nickname);
-        return $user;
+        return [
+            'id' => $user->id,
+            'nickname' => json_decode($user->$nickname),
+            'headimgurl' => $user->headimgurl,
+        ];
     }
 
     /**

@@ -35,10 +35,12 @@ class OrderController extends Controller
             $rsp['code'] = 0;
             $limit = $request->input('limit', 10);
             $page = $request->input('page', 1);
-            $orders = $orderModel->getByTime($searchId, strtotime($request->input('start_time')), strtotime($request->input('end_time')), $limit, $page);
+            $start = strtotime($request->input('start_time'));
+            $end = strtotime($request->input('end_time'));
+            $orders = $orderModel->getByTime($searchId, $start, $end, $limit, $page);
             $rsp['items'] = $orderModel->getOrdersInfoByAgent($orders);
             $rsp['num'] = count($rsp['items']);
-            $totel = $orderModel->getAll($searchId);
+            $totel = $orderModel->getAllBetweenTime($searchId, $start, $end);
             $rsp['totel'] = $totel;
             $rsp['pages'] =  intval($totel/$limit) + ($totel % $limit == 0 ? 0 : 1);
         } else {

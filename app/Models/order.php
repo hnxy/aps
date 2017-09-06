@@ -548,11 +548,13 @@ class Order extends Model
             'all_price' => $allPrice
         ];
     }
-    public function getAll($searchId)
+    public function getAllBetweenTime($searchId, $start, $end)
     {
         $arr['where'] = [['agent_id', '=', $searchId]];
         $arr['whereIn']['key'] = 'order_status';
         $arr['whereIn']['values'] = [self::orderStatus['WAIT_SEND'], self::orderStatus['WAIT_RECV'], self::orderStatus['IS_FINISH']];
+        $arr['whereBetween']['key'] = 'created_at';
+        $arr['whereBetween']['range'] = [$start, $end];
         return DbOrder::all($arr);
     }
     public function getTrade($agentId, $start, $end)
