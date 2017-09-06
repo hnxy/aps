@@ -141,5 +141,4 @@ class Agent extends Model
         return DbAgent::remove(['where' => ['id' => agentId]]);
     }
 }
-
 ?>
