@@ -22,5 +22,5 @@
         'qrcode_path' => env('DOWN_LOAD_FILE') . '/iamges/qr_code',
         'review_status' => ['未审核', '已通过审核', '未通过审核'],
         'image_visit_path' => '/upload/xnd/iamges',
-    ]
+    ];
 ?>
