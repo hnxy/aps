@@ -127,15 +127,15 @@ class Order extends Model
     }
     public static function all($arr)
     {
+        $query = app('db')->table(self::$model)
+                          ->where(isset($arr['where']) ? $arr['where'] : []);
         if (isset($arr['whereIn'])) {
-            return app('db')->table(self::$model)
-                            ->where(isset($arr['where']) ? $arr['where'] : [])
-                            ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
-                            ->count('id');
+            $query->whereIn($arr['whereIn']['key'], $arr['whereIn']['values']);
         }
-        return app('db')->table(self::$model)
-                        ->where(isset($arr['where']) ? $arr['where'] : [])
-                        ->count('id');
+        if (isset($arr['whereBetween'])) {
+            $query->whereBetween($arr['whereBetween']['key'], $arr['whereBetween']['range']);
+        }
+        return  $query->count('id');
     }
     public static function getTrade($agentId, $start, $end)
     {

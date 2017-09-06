@@ -96,7 +96,7 @@ class UserController extends Controller
                 'id_num' => $agentObj->id_num,
                 'phone' => $agentObj->phone,
                 'address' => $agentObj->address,
-                'nickname' => $user->nickname,
+                'nickname' => json_decode($user->nickname),
                 'agent_id' => $agentObj->id,
                 'level' => $agentObj->level,
                 'status' => config('wx.review_status')[$agentObj->review],
@@ -146,7 +146,11 @@ class UserController extends Controller
     public static function get(Request $request, $agent, $subAgentId)
     {
         header('Content-Type:application/json');
-        return $agent;
+        return [
+            'id' => $agent->id,
+            'nickname' => json_decode($agent->$nickname),
+            'headimgurl' => $agent->headimgurl,
+        ];
     }
     public function show($agent, $subAgentId)
     {
