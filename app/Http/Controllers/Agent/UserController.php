@@ -148,7 +148,7 @@ class UserController extends Controller
         header('Content-Type:application/json');
         return [
             'id' => $agent->id,
-            'nickname' => json_decode($agent->$nickname),
+            'nickname' => json_decode($agent->nickname),
             'headimgurl' => $agent->headimgurl,
         ];
     }
