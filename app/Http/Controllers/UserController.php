@@ -176,8 +176,7 @@ class UserController extends Controller
             'uid' => $userInfo->id,
             'from_agent_id' => $userInfo->agent_id,
         ];
-        $callbackArr = explode('#', $callback);
-        if (strpos($callbackArr[1], '?') === false) {
+        if (strpos($callback, '?') === false) {
             return redirect($callback . '?' . http_build_query($params));
         } else {
             return redirect($callback . '&' . http_build_query($params));

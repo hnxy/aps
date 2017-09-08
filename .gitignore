@@ -7,3 +7,4 @@ Homestead.json
 .tags_sorted_by_file
 .tags
 dump.rdb
+.idea/*
