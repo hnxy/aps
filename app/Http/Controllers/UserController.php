@@ -48,7 +48,7 @@ class UserController extends Controller
         header('Content-Type:applicate/json');
         return [
             'id' => $user->id,
-            'nickname' => json_decode($user->$nickname),
+            'nickname' => json_decode($user->nickname),
             'headimgurl' => $user->headimgurl,
         ];
     }
@@ -188,9 +188,9 @@ class UserController extends Controller
         $agentModel = new Agent();
         if (($agent = $agentModel->hasApply($userInfo->id)) !== false) {
             if ($agent->review == 0) {
-                throw new ApiException(config('error.agent_has_apply.msg'), config('error.agent_has_apply.code'));
+                return '<script>alert("' . config('error.agent_has_apply.msg') . '")</script>';
             } else if ($agent->review == 1) {
-                throw new ApiException(config('error.is_agent.msg'), config('error.is_agent.code'));
+                return '<script>alert("' . config('error.is_agent.msg') . '")</script>';
             }
         }
         $agentModel->add([
@@ -198,7 +198,7 @@ class UserController extends Controller
             'created_by' => $agentId,
             'level' => $level,
             ]);
-        return config('error.success');
+        return '<script>alert("申请成功")</script>';
     }
 }
 ?>
