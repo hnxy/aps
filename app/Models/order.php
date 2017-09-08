@@ -89,7 +89,7 @@ class Order extends Model
         $priceInfos[] = ['name' => '优惠金额', 'value' => '￥00.00'];
         $sendTime = formatY($sendTime);
         return [
-            'send_time' => ["预计{$sendTime}发货", "预计{$timespace}天后到货"],
+            'send_time' => ["预计{$sendTime}发货", "预计{$timespace}天到货"],
             'price_info' => $priceInfos,
             'goods_car_info' => $goodsCarInfos,
         ];
@@ -195,12 +195,14 @@ class Order extends Model
     }
     protected function formatGoods($order, $goods)
     {
+        preg_match('/^(\d*)(.*?)$/', $goods->unit, $match);
+        $num = empty($match[1]) ?  1 : intval($match[1]);
         $goodsInfo = [
                 'goods_id' => $order->goods_id,
                 'name' => $goods->title,
                 'goods_desc' => $goods->description,
-                'num' => $order->goods_num,
-                'unit' => $goods->unit,
+                'num' => $order->goods_num * $num,
+                'unit' => $match[2],
                 'goods_img' => $goods->goods_order_img,
                 'goods_price' => $goods->price,
             ];
