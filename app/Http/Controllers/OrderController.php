@@ -428,8 +428,6 @@ class OrderController extends Controller
         //获取总金额
         $all = $payModel->getAll($goodses, obj2arr($orders));
         $all = $all * 100;
-        $fp = fopen('data', 'w+');
-        fwrite($fp, strval(strcmp($all, $notifyObj['total_fee'])));
         if (strcmp($all, $notifyObj['total_fee']) !== 0) {
             $this->reply('Fail', '订单金额不一致');
             return;

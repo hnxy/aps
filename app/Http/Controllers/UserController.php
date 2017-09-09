@@ -174,7 +174,7 @@ class UserController extends Controller
         $params = [
             'token' => $userInfo->token,
             'uid' => $userInfo->id,
-            'from_agent_id' => $userInfo->agent_id,
+            'agent_id' => $userInfo->agent_id,
         ];
         if (strpos($callback, '?') === false) {
             return redirect($callback . '?' . http_build_query($params));
@@ -194,7 +194,7 @@ class UserController extends Controller
         }
         $agentModel->add([
             'user_id' => $userInfo->id,
-            'created_by' => $agentId,
+            'created_by' => $level == 1 ? 0 : $agentId,
             'level' => $level,
             ]);
         return '<script>alert("申请成功")</script>';
