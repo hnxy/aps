@@ -12,10 +12,10 @@ class Agent extends Model
                         ->first();
     }
 
-    public static function add($AgentArr)
+    public static function add($agentArr)
     {
         return app('db')->table(self::$model)
-                        ->insert($AgentArr);
+                        ->insertGetId($agentArr);
     }
     public static function update($arr)
     {
@@ -27,14 +27,16 @@ class Agent extends Model
     {
         return app('db')->table(self::$model)
                         ->where(isset($arr['where']) ? $arr['where'] : [])
-                        ->select('id', 'username', 'user_id', 'review', 'level', 'is_detail', 'id_num', 'phone', 'address')
+                        ->select('id', 'username', 'user_id', 'review', 'level', 'is_detail', 'id_num', 'phone', 'address', 'qr_agent_url')
+                        ->limit($arr['limit'])
+                        ->offset(($arr['page'] - 1) * $arr['limit'])
                         ->get();
     }
     public static function getAll($arr)
     {
         return app('db')->table(self::$model)
                         ->where(isset($arr['where']) ? $arr['where'] : [])
-                        ->count();
+                        ->count('id');
     }
     public static function modify($arr)
     {

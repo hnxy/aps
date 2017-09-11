@@ -27,6 +27,13 @@ class Order extends Model
     {
         return DbOrder::create($orderMsg);
     }
+    public function getByOrderNum($orderNum)
+    {
+        $arr['where'] = [
+            ['order_num', '=', $orderNum],
+        ];
+        return DbOrder::get($arr);
+    }
     /**
      * [根据订单ID获取订单]
      * @param  [integer] $id [订单ID]
@@ -427,18 +434,6 @@ class Order extends Model
     {
         return DbOrder::getByTime($agentId, $start, $end, $limit, $page);
     }
-    /**
-     * [addLogistics description]
-     * @param [type] $orderIds [description]
-     * @param [type] $orderArr [description]
-     */
-    public function addLogistics($orderIds, $orderArr)
-    {
-        $uarr['whereIn']['key'] = 'id';
-        $uarr['whereIn']['values'] = $orderIds;
-        $uarr['update'] = $orderArr;
-        return DbOrder::mModify($uarr);
-    }
     public function updateByLogstics($logstics, $arr)
     {
         $uarr['where'] = ['logistics_code' => $logstics];
@@ -483,12 +478,8 @@ class Order extends Model
         $uarr['update'] = $arr;
         return DbOrder::modify($uarr);
     }
-    public function mgetUnsendByIds($orderIds)
+    public function getByIds($orderIds)
     {
-        $arr['where'] = [
-            ['order_status', '=', 2],
-            ['is_del', '=', 0],
-        ];
         $arr['whereIn']['key'] = 'id';
         $arr['whereIn']['values'] = $orderIds;
         return DbOrder::mgetByOrderIds($arr);
@@ -515,6 +506,8 @@ class Order extends Model
             $allPrice = sprintf('%.2f', ($goods->price - $arr['couponPrice']) * $order->goods_num);
             $orderInfos[] =[
                 'id' => $order->id,
+                'user_id' => $order->user_id,
+                'addr_id' => $order->addr_id,
                 'order_num' => $order->order_num,
                 'created_at' => formatTime($order->created_at),
                 'pay_by' => $payment->pay_name,
@@ -541,6 +534,8 @@ class Order extends Model
         $payment = $paymentModel->get($order->pay_id);
         return [
             'id' => $order->id,
+            'user_id' => $order->user_id,
+            'addr_id' => $order->addr_id,
             'order_num' => $order->order_num,
             'created_at' => formatTime($order->created_at),
             'pay_by' => $payment->pay_name,
@@ -559,9 +554,63 @@ class Order extends Model
         $arr['whereBetween']['range'] = [$start, $end];
         return DbOrder::all($arr);
     }
+    public function getAllBetweenTimeWithStatus($start, $end, $status)
+    {
+        $arr['where'] = [['order_status', '=', $status]];
+        $arr['whereBetween']['key'] = 'created_at';
+        $arr['whereBetween']['range'] = [$start, $end];
+        return DbOrder::all($arr);
+    }
     public function getTrade($agentId, $start, $end)
     {
         return DbOrder::getTrade($agentId, $start, $end);
+    }
+    public function mgetByTimeWithStatus($start, $end, $status, $limit = 10, $page = 1)
+    {
+        $arr['where'] = [
+            ['order_status', '=', $status],
+        ];
+        $arr['limit'] = $limit;
+        $arr['page'] = $page;
+        $arr['whereBetween']['key'] = 'created_at';
+        $arr['whereBetween']['range'] = [$start, $end];
+        return DbOrder::mgetByTimeWithStatus($arr);
+    }
+    public function getOrderInfoByAdmin($order)
+    {
+        $addressModel = new Address();
+        $userModel = new User();
+        $address = $addressModel->getById($order->addr_id);
+        $user = $userModel->get($order->user_id);
+        $orderInfo = $this->getOrderInfoByAgent($order);
+        $orderInfo['nickname'] = json_decode($user->nickname);;
+        $orderInfo['address'] = $addressModel->getFullAddr($address)['msg'];
+        return $orderInfo;
+    }
+    public function getOrdersInfoByAdmin($orders)
+    {
+        $userIds = $addrIds = [];
+        foreach ($orders as $order) {
+            $addrIds[] = $order->addr_id;
+            $userIds[] = $order->user_id;
+        }
+        array_unique($addrIds);
+        array_unique($userIds);
+        $addressModel = new Address();
+        $userModel = new User();
+        $addresses = $addressModel->mgetByIds($addrIds);
+        $users = $userModel->mgetByIds($userIds);
+        $addrMap = getMap($addresses, 'id');
+        $userMap = getMap($users, 'id');
+        $ordersInfos = $this->getOrdersInfoByAgent($orders);
+        foreach ($ordersInfos as &$orderInfo) {
+            $user = $userMap[$orderInfo['user_id']];
+            $address = $addrMap[$orderInfo['addr_id']];
+            $orderInfo['nickname'] = json_decode($user->nickname);
+            $orderInfo['address'] = $addressModel->getFullAddr($address)['msg'];
+        }
+        unset($orderInfo);
+        return $ordersInfos;
     }
 }
 ?>

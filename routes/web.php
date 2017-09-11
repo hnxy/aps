@@ -83,7 +83,7 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
                 });
             });
             $app->post('/agent_qr', 'UserController@createAgentQrcode');
-            $app->post('/share_qr', 'UserController@createShareQrcode');
+            // $app->post('/share_qr', 'UserController@createShareQrcode');
             $app->group(['middleware' => ['add_auth']], function () use ($app) {
                 $app->post('/', 'UserController@store');
                 $app->group(['prefix' => '/sub_agent/{sub_agent_id}', 'where' => ['sub_agent_id' => '[0-9]{1, 11}']], function () use ($app) {
@@ -110,14 +110,21 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
                     $app->post('/img', 'GoodsController@saveImg');
                 });
             });
+            $app->group(['prefix' => '/express'], function () use ($app) {
+                $app->get('/', 'ExpressController@index');
+            });
             $app->post('/agent_qr', 'UserController@createAgentQrcode');
             //订单相关
             $app->group(['prefix' => '/order'], function() use ($app) {
                 $app->get('/', 'OrderController@index');
-                $app->put('/logistics', 'OrderController@addLogistics');
-                $app->group(['prefix' => '/{id}', 'where' => ['id' => '[0-9]{1,11}'] ], function () use ($app) {
+                $app->patch('/', 'OrderController@update');
+                $app->group(['prefix' => '/{order_num}', 'where' => ['id' => '[0-9]{1,11}'] ], function () use ($app) {
                         $app->get('/', 'OrderController@show');
                 });
+            });
+            $app->group(['prefix' => '/agent'], function () use ($app) {
+                $app->get('/', 'AgentController@index');
+                $app->patch('/{agent_id}', 'AgentController@update');
             });
         });
     });

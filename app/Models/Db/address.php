@@ -104,4 +104,11 @@ class Address extends Model
                         ->where($arr['where'])
                         ->update($arr['update']);
     }
+    public static function mgetByIds($arr)
+    {
+        return app('db')->table(self::$model)
+                        ->where(isset($arr['where']) ? $arr['where'] : [])
+                        ->whereIn($arr['whereIn']['key'], $arr['whereIn']['values'])
+                        ->get();
+    }
 }

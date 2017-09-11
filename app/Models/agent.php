@@ -19,15 +19,22 @@ class Agent extends Model
     {
         return DbAgent::add($arr);
     }
-    public function mgetByAgentId($agentId, $status, $limit, $page)
+    public function mgetByAgentId($agentId, $status, $limit, $page, $level)
     {
         $arr['limit'] = $limit;
         $arr['page'] = $page;
-        $arr['where'] = [
-            ['created_by', '=', $agentId],
-            ['review', '=', $status],
-            ['level', '=', 2],
-        ];
+        if ($agentId == 0) {
+            $arr['where'] = [
+                ['review', '=', $status],
+                ['level', '=', $level],
+            ];
+        } else {
+            $arr['where'] = [
+                ['created_by', '=', $agentId],
+                ['review', '=', $status],
+                ['level', '=', $level],
+            ];
+        }
         return DbAgent::mget($arr);
     }
      /**
@@ -89,12 +96,20 @@ class Agent extends Model
         }
         return $agent;
     }
-    public function getAll($agentId, $status)
+    public function getAll($agentId, $status, $level)
     {
-        $arr['where'] = [
-            ['created_by', '=', $agentId],
-            ['review', '=', $status],
-        ];
+        if ($agentId == 0) {
+            $arr['where'] = [
+                ['review', '=', $status],
+                ['level', '=', $level],
+            ];
+        } else {
+            $arr['where'] = [
+                ['created_by', '=', $agentId],
+                ['review', '=', $status],
+                ['level', '=', $level],
+            ];
+        }
         return DbAgent::getAll($arr);
     }
     public function getSubAgent($agentId, $subAgentId)
@@ -139,6 +154,23 @@ class Agent extends Model
     public function remove($agentId)
     {
         return DbAgent::remove(['where' => ['id' => agentId]]);
+    }
+    public function createQrCode($codeUrl)
+    {
+        $filename = getRandomString(64) . '.png';
+        $dir = config('wx.qrcode_path');
+        if (!file_exists($dir)) {
+            mkdir($dir, 0760, true);
+        }
+        $visitUrl = 'http://' . config('wx.host') . config('wx.image_visit_path') . '/qr_code/' . $filename;
+        $fullname = $dir . '/' . $filename;
+        $content = app('qrcode')->format('png')
+                                ->size(400)
+                                ->generate($codeUrl, $fullname);
+        return [
+            'visit_url' => $visitUrl,
+            'fullname' => $fullname,
+        ];
     }
 }
 ?>

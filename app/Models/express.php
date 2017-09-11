@@ -12,6 +12,10 @@ class Express extends Model
     {
         return DbExpress::get(['where' => ['id' => $id] ]);
     }
+    public function mget()
+    {
+        return DbExpress::mget();
+    }
     public function getExpress($order, $express, $goods, $expressInfo)
     {
         $expressInfo['phone'] = config("wx.express_offic_phone.{$express->code}");

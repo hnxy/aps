@@ -149,5 +149,17 @@ class Order extends Model
                         ->groupBy(app('db')->raw('FROM_UNIXTIME(created_at, "%Y-%m-%d")'))
                         ->get();
     }
+    public static function mgetByTimeWithStatus($arr)
+    {
+        $query = app('db')->table(self::$model);
+        if (isset($arr['whereBetween'])) {
+            $query->whereBetween($arr['whereBetween']['key'], $arr['whereBetween']['range']);
+        }
+        return $query->where(isset($arr['where']) ? $arr['where'] : [])
+                     ->limit($arr['limit'])
+                     ->offset(($arr['page'] - 1) * $arr['limit'])
+                     ->orderBy('id', 'desc')
+                     ->get();
+    }
 }
 ?>

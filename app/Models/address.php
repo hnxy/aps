@@ -17,6 +17,12 @@ class Address extends Model
                 ['id', '=', $addrId],
             ]]);
     }
+    public function getById($addrId)
+    {
+        return DbAddress::get(['where' => [
+                ['id', '=', $addrId],
+            ]]);
+    }
     /**
      * [获取完整的地址]
      * @param  [Integer] $addrID [地址ID]
@@ -84,6 +90,12 @@ class Address extends Model
         ];
         $uarr['update'] = $arr;
         return DbAddress::modify($uarr);
+    }
+    public function mgetByIds($addrIds = [])
+    {
+        $arr['whereIn']['key'] = 'id';
+        $arr['whereIn']['values'] = $addrIds;
+        return DbAddress::mgetByIds($arr);
     }
 }
 

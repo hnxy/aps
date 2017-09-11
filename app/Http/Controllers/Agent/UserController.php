@@ -79,7 +79,7 @@ class UserController extends Controller
         $userModel = new User();
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
-        $agents = $agentModel->mgetByAgentId($agent->id, $request->status, $limit, $page);
+        $agents = $agentModel->mgetByAgentId($agent->id, $request->status, $limit, $page, 2);
         $rsp = config('error.items');
         $userIds = [];
         $agentMap = [];
@@ -104,7 +104,7 @@ class UserController extends Controller
             ];
         }
         $rsp['num'] = count($rsp['items']);
-        $totel = $agentModel->getAll($agent->id, $request->status);
+        $totel = $agentModel->getAll($agent->id, $request->status, 2);
         $rsp['totle'] = $totel;
         $rsp['pages'] = intval($totel/$limit) + ($totel % $limit == 0 ? 0 : 1);
         return $rsp;
@@ -112,36 +112,10 @@ class UserController extends Controller
     public function createAgentQrcode(Request $request, $agent)
     {
         $agentModel = new Agent();
-        $filename = $agent->id. '_agent_' . getRandomString(32) . '.png';
-        $dir = config('wx.qrcode_path');
-        if (!is_dir($dir)) {
-            mkdir($dir, 0760, true);
-        }
         $codeUrl = 'http://' . $request->header('host') . '/v1/login3?agent_id=' . $agent->id;
-        $visitUrl = 'http://' . config('wx.host') . config('wx.image_visit_path') . '/qr_code/' . $filename;
-        $fullname = $dir . '/' . $filename;
-        $content = app('qrcode')->format('png')
-                                ->size(400)
-                                ->generate($codeUrl, $fullname);
-        $agentModel->modifyByAgentId($agent->id, ['qr_agent_url' => $visitUrl]);
-        return ['agent_qrcode_url' => $visitUrl];
-    }
-    public function createShareQrcode(Request $request, $agent)
-    {
-        $agentModel = new Agent();
-        $filename = $agent->id. '_share_' . getRandomString(32) . '.png';
-        $dir = config('wx.qrcode_path');
-        if (!is_dir($dir)) {
-            mkdir($dir, 0760, true);
-        }
-        $codeUrl = 'http://' . config('wx.host') . '/#/?from_agent_id=' . $agent->id;
-        $visitUrl = 'http://' . config('wx.host') . config('wx.image_visit_path') . '/qr_code/' . $filename;
-        $fullname = $dir . '/' . $filename;
-        $content = app('qrcode')->format('png')
-                                ->size(400)
-                                ->generate($codeUrl, $fullname);
-        $agentModel->modifyByAgentId($agent->id, ['qr_share_url' => $visitUrl]);
-        return ['share_qrcode_url' => $visitUrl];
+        $codeInfo = $agentModel->createQrCode($codeUrl);
+        $agentModel->modifyByAgentId($agent->id, ['qr_agent_url' => $codeInfo['visit_url']]);
+        return ['agent_qrcode_url' => $codeInfo['visit_url']];
     }
     public static function get(Request $request, $agent, $subAgentId)
     {

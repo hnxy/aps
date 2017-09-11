@@ -21,27 +21,27 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $rules = [
-            'search' => 'required|integer',
-            'start_time' => 'date',
-            'end_time' => 'date',
-            'limit' => 'integer|max:100',
+            'created_at_start' => 'required|date',
+            'created_at_end' => 'required|date',
+            'status' => 'integer|max:5|min:1',
+            'limit' => 'integer|max:10',
             'page' => 'integer',
         ];
         $this->validate($request, $rules);
-        $searchId = $request->input('search');
         $rsp = config('error.success');
         $orderModel = new Order();
-        if($request->has('start_time') && $request->has('end_time')) {
-            $rsp['code'] = 0;
-            $limit = $request->input('limit', 10);
-            $page = $request->input('page', 1);
-            $orders = $orderModel->getByTime($searchId, strtotime($request->input('start_time')), strtotime($request->input('end_time')), $limit, $page);
-            $rsp['items'] = $orderModel->getOrdersInfo($orders);
-            $rsp['num'] = count($rsp['items']);
-        } else {
-            $rsp['code'] = 1;
-            $rsp['msg'] = '参数错误';
-        }
+        $status = $request->input('status', 2);
+        $start = strtotime($request->input('created_at_start'));
+        $end = strtotime($request->input('created_at_end'));
+        $rsp['code'] = 0;
+        $limit = $request->input('limit', 10);
+        $page = $request->input('page', 1);
+        $orders = $orderModel->mgetByTimeWithStatus($start, $end, $status, $limit, $page);
+        $rsp['items'] = $orderModel->getOrdersInfoByAdmin($orders);
+        $rsp['num'] = count($rsp['items']);
+        $totel = $orderModel->getAllBetweenTimeWithStatus($start, $end, $status);
+        $rsp['totel'] = $totel;
+        $rsp['pages'] =  intval($totel/$limit) + ($totel % $limit == 0 ? 0 : 1);
         return $rsp;
     }
     /**
@@ -51,89 +51,39 @@ class OrderController extends Controller
      * @param  [type]  $orderId [description]
      * @return [type]           [description]
      */
-    public function show(Request $request, $agent, $orderId)
+    public function show(Request $request, $admin, $orderNum)
     {
-        $rules = [
-            'search' => 'required|integer',
-        ];
-        $this->validate($request, $rules);
-        $searchId = $request->input('search');
         $orderModel = new Order();
-        $order = $orderModel->getByAgentId($searchId, $orderId);
+        $order = $orderModel->getByOrderNum($orderNum);
         if (!$orderModel->isExist($order)) {
             return config('error.order_not_exist');
         }
-        return $orderModel->getOrderInfo($order, $order->coupon_id);
+        return $orderModel->getOrderInfoByAdmin($order);
     }
     /**
      * [添加物流号]
      * @param Request $request [description]
      */
-    public  function addLogistics(Request $request)
+    public function update(Request $request)
     {
         $rules = [
             'order_ids' => 'required|string',
-            'express_id' => 'required|integer',
-            'logistics_code' => 'required|string|max:32',
+            'express_id' => 'integer',
+            'logistics_code' => 'string|max:32',
         ];
         $this->validate($request, $rules);
         $rsp = config('error.success');
         $orderModel = new Order();
         $orderIds = explode(',', $request->input('order_ids'));
         array_pop($orderIds);
-        $orders = $orderModel->mgetUnsendByIds($orderIds);
-        //检查订单是否有效
+        $orders = $orderModel->getByIds($orderIds);
         if (count(obj2arr($orders)) != count($orderIds)) {
             throw new ApiException(config('error.contain_order_not_work_exception.msg'), config('error.contain_order_not_work_exception.code'));
         }
-        $upDatas = $request->only(['logistics_code', 'express_id']);
-        //更新状态为3
-        $upDatas['order_status'] = 3;
-        $orderModel->addLogistics($orderIds, $upDatas);
+        $orderArr = $request->all();
+        array_filter($orderArr);
+        $orderArr['status'] = 3;
+        $orderModel->mModify($orderIds, $orderArr);
         return $rsp;
-    }
-    /**
-     * [获取分类订单]
-     * @param  Request $request [description]
-     * @param  [type]  $agent   [description]
-     * @return [type]           [description]
-     */
-    public function getClassesOrder(Request $request, $agent)
-    {
-        $rules = [
-            'limit' => 'integer|max:10|min:1',
-            'page' => 'integer|min:1',
-            'status' => 'required|integer'
-        ];
-        $this->validate($request, $rules);
-        $rsp = config('error.items');
-        $status = $request->input('status');
-        $limit = $request->input('limit', 10);
-        $page = $request->input('page', 1);
-        $orderModel = new Order();
-        $orders = $orderModel->mget($agent->id, $limit, $page, $status);
-        if(empty(obj2arr($orders))) {
-            $rsp['code'] = 0;
-            $rsp['items'] = [];
-            $rsp['num'] = 0;
-        } else {
-            $rsp['code'] = 0;
-            $rsp['items'] = $orderModel->getOrdersInfo($orders);
-            $rsp['num'] = count($rsp['items']);
-        }
-        return $rsp;
-    }
-    public function queryOrderFromWx(Request $request)
-    {
-        $rules = [
-            'order_id' => 'required|integer',
-        ];
-        $this->validate($rules, $request);
-        $orderId = $request->input('order_id');
-        $order = $orderModel->getById($orderId);
-        $wxModel = new Wx();
-        if (!is_null($order->transaction_id)) {
-            $wxModel->queryByWx('transaction_id', $order->transaction_id);
-        }
     }
 }

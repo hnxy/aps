@@ -68,7 +68,7 @@ class OrderController extends Controller
         if (!$orderModel->isExist($order)) {
             return config('error.order_not_exist');
         }
-        return $orderModel->getOrderInfoByAgent($order, $order->coupon_id);
+        return $orderModel->getOrderInfoByAgent($order);
     }
     public function trade(Request $request)
     {
