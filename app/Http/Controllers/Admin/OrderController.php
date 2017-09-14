@@ -10,6 +10,8 @@ use App\Models\Wx;
 use App\Models\GoodsCar;
 use App\Execptions\ApiException;
 use App\Http\Controllers\Controller;
+use PHPExcel;
+use PHPExcel_IOFactory;
 
 class OrderController extends Controller
 {
@@ -85,5 +87,50 @@ class OrderController extends Controller
         $orderArr['status'] = 3;
         $orderModel->mModify($orderIds, $orderArr);
         return $rsp;
+    }
+    public function loadExcel(Request $request)
+    {
+        $orders = $this->index($request)['items'];
+        $headers = $this->getHeaders();
+        $setting = config('wx.order_excel_table');
+        return response()->download($this->buildExcel($orders, uniqid(), $headers));
+    }
+    private function getHeaders()
+    {
+        return ['用户id', '用户昵称', '订单id', '订单号', '订单的创建时间', '订单的价格', '订单状态', '商品数量', '商品单位', '用户收货地址', '代理id', '物流号'];
+    }
+    private function getColMap()
+    {
+        return ['user_id', 'nickname', 'id', 'order_num', 'created_at', 'all_price', 'order_status', 'goods_num', 'goods_unit', 'address.fullAddr', 'agent_id', 'logistics_code'];
+    }
+    protected function buildExcel($datas , $filename, array $header, array $setting = [])
+    {
+        $objPHPExcel = new PHPExcel();
+        $colMap = $this->getColMap();
+        $cellMap = getExcelCellMap();
+        $objPHPExcel->getProperties()->setCreator(isset($setting['creator']) ? $setting['creator'] : '')
+                                     ->setLastModifiedBy(isset($setting['lastModifiedBy']) ? $setting['lastModifiedBy'] : '')
+                                     ->setTitle(isset($setting['title']) ? $setting['title'] : '')
+                                     ->setSubject(isset($setting['subject']) ? $setting['subject'] : '')
+                                     ->setDescription(isset($setting['description']) ? $setting['description'] : '');
+        $objActSheet = $objPHPExcel->setActiveSheetIndex(0);
+        for ($i = 0, $len = count($header); $i < $len; $i++) {
+            $objActSheet->setCellValue($cellMap[$i] . ($i + 1), $header[$i]);
+        }
+        foreach ($datas as $data) {
+            for ($i = 0, $len = count($colMap); $i < $len; $i++) {
+                $indexArr = explode('.', $colMap[$i]);
+                $current = obj2arr($data);
+                do {
+                    $current = $current[current($indexArr)];
+                } while(next($indexArr));
+                $objActSheet->setCellValue($cellMap[$i] . ($i + 1), $current);
+            }
+        }
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $dir = config('wx.file_path');
+        $file = $dir . '/' . $filename . '.xlsx';
+        $objWriter->save($file);
+        return $file;
     }
 }

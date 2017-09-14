@@ -109,18 +109,31 @@ class OrderController extends Controller
             //更新商品的库存
             $goodsMap = array_column(obj2arr($goodsCars), 'goods_num', 'goods_id');
             $goodsModel->modifyStock($goodsMap, 'decrement');
-            $couponGoodsId = $coupon['goods_id'];
+
             //更新优惠券使用次数
             if(!empty($coupon)) {
-               $couponModel->modifyTimesById($couponId, $goodsMap[$couponGoodsId]);
+                $couponGoodsId = $coupon['goods_id'];
+                $couponModel->modifyTimesById($couponId, $goodsMap[$couponGoodsId]);
             }
             //创建订单
             $time = time();
-            $orders = [];
+            $orders = $goodsIds = [];
             $combinePayId = Order::getCombinePayId($user->id, $payId);
             $agentId = is_null($agentId) ? 0 : $agentId;
             foreach ($goodsCars as $goodsCar) {
-                $orderNum = $this->getOrderNum(16);
+                $goodsIds[] = $goodsCar->goods_id;
+            }
+            $goodses = $goodsModel->mgetByIds($goodsIds);
+            $goodsMap = getMap($goodses, 'id');
+            foreach ($goodsCars as $goodsCar) {
+                $goods = $goodsMap[$goodsCar->goods_id];
+                $orderNum = $this->getOrderNum($user->id);
+                $orderCouponId = !empty($coupon) && $coupon['goods_id'] == $goodsCar->goods_id ? $couponId : null;
+                if (!is_null($orderCouponId)) {
+                    $orderPrice = $goodsCar->goods_num * ($goods->price - $coupon['price']);
+                } else {
+                    $orderPrice = $goodsCar->goods_num * $goods->price;
+                }
                 $orders[] = [
                     'order_num' => $orderNum,
                     'pay_id' => $payId,
@@ -128,13 +141,14 @@ class OrderController extends Controller
                     'send_time' => mktime(0, 0, 0, date('m'), date('d') + 1, date('Y')),
                     'time_space' => 3,
                     'send_price' => 0,
-                    'coupon_id' => !empty($coupon) && $coupon['goods_id'] == $goodsCar->goods_id ? $couponId : null,
+                    'coupon_id' => $orderCouponId,
                     'pay_status' => 1,
                     'order_status' => 1,
                     'user_id' => $user->id,
                     'created_at' => $time,
                     'goods_id' => $goodsCar->goods_id,
                     'goods_num' => $goodsCar->goods_num,
+                    'order_price' => $orderPrice,
                     'combine_pay_id' => $combinePayId,
                     'agent_id' => $agentId,
                 ];
@@ -162,9 +176,9 @@ class OrderController extends Controller
      * @param  [type] $len [description]
      * @return [type]      [description]
      */
-    private function getOrderNum($len)
+    private function getOrderNum($uid)
     {
-        return getRandomString($len);
+        return getRandomNumber($uid);
     }
     private function checkPayEnable($payId)
     {
@@ -426,13 +440,12 @@ class OrderController extends Controller
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
         //获取总金额
-        $all = $payModel->getAll($goodses, obj2arr($orders));
-        $all = $all * 100;
+        $all = $payModel->getAll(obj2arr($orders));
         if (strcmp($all, $notifyObj['total_fee']) !== 0) {
             $this->reply('Fail', '订单金额不一致');
             return;
         }
-        $payTime = $notifyObj['time_end'];
+        $payTime = time();
         $transactionId = $notifyObj['transaction_id'];
         $this->waitSend($orderIds, $payTime, $transactionId);
         $this->reply('SUCCESS', 'OK');

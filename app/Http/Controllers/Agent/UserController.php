@@ -112,10 +112,18 @@ class UserController extends Controller
     public function createAgentQrcode(Request $request, $agent)
     {
         $agentModel = new Agent();
-        $codeUrl = 'http://' . $request->header('host') . '/v1/login3?agent_id=' . $agent->id;
+        $codeUrl = 'http://' . config('wx.back_host') . '/v1/login3?agent_id=' . $agent->id;
         $codeInfo = $agentModel->createQrCode($codeUrl);
         $agentModel->modifyByAgentId($agent->id, ['qr_agent_url' => $codeInfo['visit_url']]);
         return ['agent_qrcode_url' => $codeInfo['visit_url']];
+    }
+    public function createSharecode(Request $request, $agent)
+    {
+        $agentModel = new Agent();
+        $codeUrl = 'http://' . config('wx.host') . '?agent_id=' . $agent->id;
+        $codeInfo = $agentModel->createQrCode($codeUrl);
+        $agentModel->modifyByAgentId($agent->id, ['qr_share_url' => $codeInfo['visit_url']]);
+        return ['share_qrcode_url' => $codeInfo['visit_url']];
     }
     public static function get(Request $request, $agent, $subAgentId)
     {

@@ -114,9 +114,11 @@ $app->group(['prefix' => '/v1'], function () use ($app) {
                 $app->get('/', 'ExpressController@index');
             });
             $app->post('/agent_qr', 'UserController@createAgentQrcode');
+            $app->post('/share_qr', 'UserController@createShareQrcode');
             //订单相关
             $app->group(['prefix' => '/order'], function() use ($app) {
                 $app->get('/', 'OrderController@index');
+                $app->get('/table', 'OrderController@loadExcel');
                 $app->patch('/', 'OrderController@update');
                 $app->group(['prefix' => '/{order_num}', 'where' => ['id' => '[0-9]{1,11}'] ], function () use ($app) {
                         $app->get('/', 'OrderController@show');

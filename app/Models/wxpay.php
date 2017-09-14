@@ -21,7 +21,7 @@ class WxPay extends Model
     }
     public function pay($combinePayId, $orders, $openid)
     {
-        $all = $this->resolveOrders($orders);
+        $all = $this->getAll($orders);
         $time = time();
         $params = [
             'appid' => config('wx.appid'),
@@ -30,7 +30,7 @@ class WxPay extends Model
             'nonce_str' => getRandomString(16),
             'body' => config('wx.body'),
             'out_trade_no' => $combinePayId,
-            'total_fee' => $all * 100,//支付金额，单位为分
+            'total_fee' => $all,//支付金额，单位为分
             'spbill_create_ip' => $_SERVER['REMOTE_ADDR'],
             'notify_url' => config('wx.notify_url'),
             'trade_type' => 'JSAPI',
@@ -99,41 +99,16 @@ class WxPay extends Model
         curl_close($ch);
         return $rsp;
     }
-    public function getAll($goodses, array $orders)
+    public function getAll($orders)
     {
-        $couponModel = new Coupon();
-        $goodsMap = getMap($goodses, 'id');
+        if (!is_array($orders)) {
+            $orders = obj2arr($orders);
+        }
         //计算总金额
         $all = 0;
         foreach ($orders as $order) {
-            $goods = $goodsMap[$order['goods_id']];
-            $all += $goods->price * $order['goods_num'];
-            if (!is_null($order['coupon_id'])) {
-                $coupon = $couponModel->getById($order['coupon_id']);
-                //防止该优惠券已经删除
-                if (!empty($coupon)) {
-                    $all -= $coupon->price * $order['goods_num'];
-                }
-            }
+            $all += $order['order_price'];
         }
         return $all;
-    }
-    protected function resolveOrders($orders)
-    {
-        $goodsIds = [];
-        $orderModel = new Order();
-        $goodsModel = new Goods();
-        $couponModel = new Coupon();
-        $orders = obj2arr($orders);
-        foreach ($orders as $order) {
-            $goodsIds[] = $order['goods_id'];
-        }
-        $goodsIds = array_unique($goodsIds);
-        $goodses = $goodsModel->mgetByIds($goodsIds);
-        //防止商品被删
-        if (count(obj2arr($goodses)) != count($goodsIds)) {
-            throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
-        }
-        return $this->getAll($goodses, $orders);
     }
 }

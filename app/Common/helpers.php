@@ -27,7 +27,10 @@
         }
         return $str;
     }
-
+    function getRandomNumber($uid)
+    {
+        return ($uid % 10) . time() . mt_rand(10000, 99999);
+    }
     /**
      * [genToken description]
      * 生成token,以后升级将会引入JWT,目前先使用普通的token
@@ -192,4 +195,14 @@
     function myEncrypt($data, $appkey) {
         return urlencode(base64_encode(md5($data.$appkey)));
     }
+    function getExcelCellMap()
+    {
+        $arr = [];
+        for($c = 72; $c < 98; $c++)
+        {
+            $arr[] = chr($c);
+        }
+        return $arr;
+    }
+
 ?>
