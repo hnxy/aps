@@ -50,6 +50,12 @@ class Agent extends Model
                         ->where(isset($arr['where']) ? $arr['where'] : [])
                         ->update(['is_del' => 1]);
     }
+    public static function mgetByIds($agentIds = [])
+    {
+        return app('db')->table(self::$model)
+                        ->whereIn('id', $agentIds)
+                        ->get();
+    }
 }
 
 ?>

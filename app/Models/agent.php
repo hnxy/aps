@@ -160,7 +160,7 @@ class Agent extends Model
         $filename = getRandomString(64) . '.png';
         $dir = config('wx.qrcode_path');
         if (!file_exists($dir)) {
-            mkdir($dir, 0760, true);
+            mkdir($dir, 0764, true);
         }
         $visitUrl = 'http://' . config('wx.host') . config('wx.image_visit_path') . '/qr_code/' . $filename;
         $fullname = $dir . '/' . $filename;
@@ -171,6 +171,10 @@ class Agent extends Model
             'visit_url' => $visitUrl,
             'fullname' => $fullname,
         ];
+    }
+    public function mgetByIds(array $agentIds)
+    {
+        return DbAgent::mgetByIds($agentIds);
     }
 }
 ?>

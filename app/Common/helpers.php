@@ -31,6 +31,12 @@
     {
         return ($uid % 10) . time() . mt_rand(10000, 99999);
     }
+    function getFilename()
+    {
+        $filename = date('YmdHis');
+        $filename .= getRandomString(5);
+        return $filename;
+    }
     /**
      * [genToken description]
      * 生成token,以后升级将会引入JWT,目前先使用普通的token
@@ -198,7 +204,7 @@
     function getExcelCellMap()
     {
         $arr = [];
-        for($c = 72; $c < 98; $c++)
+        for($c = 65; $c < 91; $c++)
         {
             $arr[] = chr($c);
         }

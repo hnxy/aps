@@ -20,7 +20,7 @@
         'notify_url' => 'http://aps.greennesstime.com/v1/order/recive',
         'body' => '鲜农达-商品',
         'qrcode_path' => env('DOWN_LOAD_FILE') . '/iamges/qr_code',
-        'file_path' => env('DOWN_LOAD_FILE') . '/iamges/qr_code',
+        'file_path' => env('DOWN_LOAD_FILE'),
         'review_status' => ['未审核', '已通过审核', '未通过审核'],
         'image_visit_path' => '/upload/xnd/iamges',
         'order_excel_config' => [

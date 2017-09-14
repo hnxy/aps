@@ -8,6 +8,7 @@ use App\Models\Agent;
 use App\Models\Admin;
 use App\Models\User;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\AgentController as BaseAgent;
 
 class AgentController extends Controller
 {
@@ -111,5 +112,23 @@ class AgentController extends Controller
             $agentArr['passwd'] = password_hash($agentArr['passwd'], PASSWORD_DEFAULT);
         }
         $agentModel->modifyByAgentId($agent->id, $AgentArr);
+    }
+    public function createAgentQrcode(Request $request, $admin, $agentId)
+    {
+        $agentModel = new Agent();
+        $agent = $agentModel->get($agentId);
+        if (empty($agent->qr_agent_url)) {
+            return (new BaseAgent())->createAgentQrcode($request, $agent);
+        }
+        return ['agent_qrcode_url' => $agent->qr_agent_url];
+    }
+    public function createShareQrcode(Request $request, $admin, $agentId)
+    {
+        $agentModel = new Agent();
+        $agent = $agentModel->get($agentId);
+        if (empty($agent->qr_share_url)) {
+            return (new BaseAgent())->createShareQrcode($request, $agent);
+        }
+        return ['share_qrcode_url' => $agent->qr_share_url];
     }
 }

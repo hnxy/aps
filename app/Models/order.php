@@ -551,7 +551,7 @@ class Order extends Model
             'logistics_code' => $order->logistics_code,
             'order_status' => config('wx.order_status')[$order->order_status],
             'coupon_price' => is_null($coupon) ? 0 : $coupon->price,
-            'all_price' => $order->order_price / 100,
+            'all_price' => '￥' . ($order->order_price / 100),
         ];
     }
     public function getAllBetweenTime($searchId, $start, $end)
@@ -598,25 +598,42 @@ class Order extends Model
     }
     public function getOrdersInfoByAdmin($orders)
     {
-        $userIds = $addrIds = [];
+        $userIds = $addrIds = $agentIds = [];
         foreach ($orders as $order) {
             $addrIds[] = $order->addr_id;
             $userIds[] = $order->user_id;
+            $agentIds[] = $order->agent_id;
         }
         array_unique($addrIds);
         array_unique($userIds);
+        array_unique($agentIds);
         $addressModel = new Address();
         $userModel = new User();
+        $agentModel = new Agent();
         $addresses = $addressModel->mgetByIds($addrIds);
         $users = $userModel->mgetByIds($userIds);
+        $agents = $agentModel->mgetByIds($agentIds);
         $addrMap = getMap($addresses, 'id');
         $userMap = getMap($users, 'id');
+        $agentMap = getMap($agents, 'id');
         $ordersInfos = $this->getOrdersInfoByAgent($orders);
         foreach ($ordersInfos as &$orderInfo) {
             $user = $userMap[$orderInfo['user_id']];
             $address = $addrMap[$orderInfo['addr_id']];
+            if ($orderInfo['agent_id'] == 0) {
+                $orderInfo['agent'] = null;
+            } else {
+                $agent = $agentMap[$orderInfo['agent_id']];
+                $orderInfo['agent'] = [
+                    'id' => $agent->id,
+                    'phone' => $agent->phone,
+                    'name' => $agent->name,
+                    'level' => $agent->level,
+                ];
+            }
             $orderInfo['nickname'] = json_decode($user->nickname);
             $orderInfo['address'] = $addressModel->getFullAddr($address)['msg'];
+
         }
         unset($orderInfo);
         return $ordersInfos;

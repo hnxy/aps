@@ -11,7 +11,7 @@ use App\Models\GoodsCar;
 use App\Execptions\ApiException;
 use App\Http\Controllers\Controller;
 use PHPExcel;
-use PHPExcel_IOFactory;
+use PHPExcel_Writer_Excel2007;
 
 class OrderController extends Controller
 {
@@ -26,7 +26,7 @@ class OrderController extends Controller
             'created_at_start' => 'required|date',
             'created_at_end' => 'required|date',
             'status' => 'integer|max:5|min:1',
-            'limit' => 'integer|max:10',
+            'limit' => 'integer|max:10000',
             'page' => 'integer',
         ];
         $this->validate($request, $rules);
@@ -91,19 +91,15 @@ class OrderController extends Controller
     public function loadExcel(Request $request)
     {
         $orders = $this->index($request)['items'];
-        $headers = $this->getHeaders();
-        $setting = config('wx.order_excel_table');
-        return response()->download($this->buildExcel($orders, uniqid(), $headers));
-    }
-    private function getHeaders()
-    {
-        return ['用户id', '用户昵称', '订单id', '订单号', '订单的创建时间', '订单的价格', '订单状态', '商品数量', '商品单位', '用户收货地址', '代理id', '物流号'];
+        $setting = config('wx.order_excel_config');
+        $filename = getFilename();
+        return response()->download($this->buildExcel($orders, $filename, $setting));
     }
     private function getColMap()
     {
-        return ['user_id', 'nickname', 'id', 'order_num', 'created_at', 'all_price', 'order_status', 'goods_num', 'goods_unit', 'address.fullAddr', 'agent_id', 'logistics_code'];
+        return ['user_id' => '用户id', 'nickname' => '用户昵称', 'id' => '订单id', 'order_num' => '订单号', 'created_at' => '订单的创建时间', 'all_price' => '订单的价格', 'order_status' => '订单状态', 'goods_num' => '商品数量', 'goods_unit' => '商品单位', 'address.fullAddr' => '用户收货地址', 'address.name' => '收货人姓名', 'address.phone' => '收货人电话', 'agent_id' => '代理id', 'agent.name' => '代理名称', 'agent.phone' => '代理的电话', 'agent.level' => '代理的等级', 'logistics_code' => '物流号'];
     }
-    protected function buildExcel($datas , $filename, array $header, array $setting = [])
+    protected function buildExcel($datas , $filename, array $setting = [])
     {
         $objPHPExcel = new PHPExcel();
         $colMap = $this->getColMap();
@@ -114,20 +110,25 @@ class OrderController extends Controller
                                      ->setSubject(isset($setting['subject']) ? $setting['subject'] : '')
                                      ->setDescription(isset($setting['description']) ? $setting['description'] : '');
         $objActSheet = $objPHPExcel->setActiveSheetIndex(0);
+        $header = array_values($colMap);
+        $keys = array_keys($colMap);
+        $index = 1;
         for ($i = 0, $len = count($header); $i < $len; $i++) {
-            $objActSheet->setCellValue($cellMap[$i] . ($i + 1), $header[$i]);
+            $objActSheet->setCellValue($cellMap[$i] . $index, $header[$i]);
         }
+        $index++;
         foreach ($datas as $data) {
-            for ($i = 0, $len = count($colMap); $i < $len; $i++) {
-                $indexArr = explode('.', $colMap[$i]);
+            foreach ($keys as $i => $key) {
+                $indexArr = explode('.', $key);
                 $current = obj2arr($data);
                 do {
                     $current = $current[current($indexArr)];
                 } while(next($indexArr));
-                $objActSheet->setCellValue($cellMap[$i] . ($i + 1), $current);
+                $objActSheet->setCellValue($cellMap[$i] . $index, $current);
             }
+            $index++;
         }
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
         $dir = config('wx.file_path');
         $file = $dir . '/' . $filename . '.xlsx';
         $objWriter->save($file);
