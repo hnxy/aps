@@ -57,6 +57,8 @@ class GoodsController extends Controller
             $goods->start_time_text = formatTime($goods->start_time);
             $goods->end_time_text = formatTime($goods->end_time);
             $goods->leave_end_time_text = formatD($goods->end_time);
+            $goods->price = $goods->price / 100;
+            $goods->origin_price = $goods->origin_price / 100;
         }
         unset($goods);
         return $goodses;
@@ -124,6 +126,8 @@ class GoodsController extends Controller
                     ],
             ];
         }
+        $goodsInfo->price = $goodsInfo->price / 100;
+        $goodsInfo->origin_price = $goodsInfo->origin_price / 100;
         $goodsInfo->send_time = '预计' . formatM($goodsInfo->send_time) . '发货';
         $goodsInfo->start_time_text = formatTime($goodsInfo->start_time);
         $goodsInfo->end_time_text = formatTime($goodsInfo->end_time);

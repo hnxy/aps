@@ -81,10 +81,10 @@ class Order extends Model
         }
         foreach ($goodsCars as $goodsCar) {
             $goodsInfo = $goodsMap[$goodsCar->goods_id];
-            $currentPrice = sprintf('%.2f', $goodsInfo->price * $goodsCar->goods_num / 100);
+            $currentPrice = sprintf('%.2f', $goodsInfo->price * $goodsCar->goods_num);
             $allPrice += $currentPrice;
             $goodsCarInfo = $this->formatGoods($goodsCar, $goodsInfo);
-            $goodsCarInfo['value'] = '￥' . $currentPrice;
+            $goodsCarInfo['value'] = '￥' . ($currentPrice / 100);
             $goodsCarInfo['goods_car_id'] = $goodsCar->id;
             $goodsCarInfos[] = $goodsCarInfo;
             $sendTime = min($sendTime, $goodsInfo->send_time);
@@ -168,7 +168,7 @@ class Order extends Model
             $orderInfo = $this->formatOrder($order);
             $goodsInfo = $this->formatGoods($order, $goods);
             $express = $this->getExpress($order->express_id);
-            $goodsInfo['value'] = '￥' . bcdiv($order->order_price, 100, 2) ;
+            $goodsInfo['value'] = '￥' . ($order->order_price / 100);
             $sendPrice = sprintf('%.2f', $order->send_price);
             $sendTime = formatTime($goods->send_time);
             $priceInfo[] = ['text' => '配送费', 'value' => '￥' . $sendPrice];
@@ -208,7 +208,7 @@ class Order extends Model
                 'num' => $order->goods_num * $units['num'],
                 'unit' => $units['unit'],
                 'goods_img' => $goods->goods_order_img,
-                'goods_price' => $goods->price,
+                'goods_price' => $goods->price / 100,
             ];
 
         if($goods->end_time < time()) {
@@ -345,7 +345,7 @@ class Order extends Model
         $paymentModel = new Payment();
         $payment = $paymentModel->get($order->pay_id);
         $payTime = null;
-        if(!is_null($order->pay_time))
+        if (!is_null($order->pay_time))
             $payTime = formatTime($order->pay_time);
         $payInfo[] = ['name' => '订单状态:', 'value' => config('wx.order_status')[$order->order_status]];
         $payInfo[] = ['name' => '订单号:', 'value' => $order->id];
@@ -374,7 +374,7 @@ class Order extends Model
         if (is_null($goodsInfo)) {
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
-        $allPrice = bcdiv($order->order_price, 100, 2);
+        $allPrice = $order->order_price / 100;
         $sendTime = formatY($goodsInfo->send_time);
         $express = $this->getExpress($order->express_id);
         //支付相关
@@ -633,7 +633,6 @@ class Order extends Model
             }
             $orderInfo['nickname'] = json_decode($user->nickname);
             $orderInfo['address'] = $addressModel->getFullAddr($address)['msg'];
-
         }
         unset($orderInfo);
         return $ordersInfos;

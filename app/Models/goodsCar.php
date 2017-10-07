@@ -119,24 +119,23 @@ class GoodsCar extends Model
         $goodsClassesModel = new GoodsClasses();
         if ($goods->end_time <= time()) {
             $temp['status'] = 1;
-            $temp['goods_car_id'] = $goodsCar->id;
-            $temp['goods_num'] = $goodsCar->goods_num;
             $goods->status_text = '该商品已下架';
             $goods->send_time = '预计' . formatM($goods->send_time) . '发货';
-            $temp['goods_info'] = $goods;
         } else {
             $temp['status'] = 0;
-            $temp['goods_car_id'] = $goodsCar->id;
-            $temp['goods_num'] = $goodsCar->goods_num;
             $goodsClasses = $goodsClassesModel->get($goods->classes_id);
-            if(empty($goodsClasses)) {
+            if (empty($goodsClasses)) {
                 $goods->status_text = null;
             } else {
                 $goods->status_text = $goodsClasses->name;
             }
             $goods->send_time = '预计' . formatM($goods->send_time) . '发货';
-            $temp['goods_info'] = $goods;
         }
+        $temp['goods_car_id'] = $goodsCar->id;
+        $temp['goods_num'] = $goodsCar->goods_num;
+        $goods->price = $goods->price / 100;
+        $goods->origin_price = $goods->origin_price / 100;
+        $temp['goods_info'] = $goods;
         return $temp;
     }
     /**
