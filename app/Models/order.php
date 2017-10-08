@@ -162,7 +162,6 @@ class Order extends Model
             throw new ApiException(config('error.goods_info_exception.msg'), config('error.goods_info_exception.code'));
         }
         foreach ($orders as $order) {
-            $allPrice = 0;
             $goods = $goodsMap[$order->goods_id];
             // $allPrice += sprintf('%.2f', $goods->price*$order->goods_num);
             $orderInfo = $this->formatOrder($order);
@@ -180,7 +179,7 @@ class Order extends Model
                 'express_info' => $express,
                 'price_info' => $priceInfo,
                 'other_info' => $otherInfo,
-                'summary' =>  ['goods_count' => "共1件商品", 'price_count' => "合计:￥{$allPrice}", 'send_price_count' => "(含运费￥{$sendPrice})"],
+                'summary' =>  ['goods_count' => "共1件商品", 'price_count' => '合计:￥' . ($order->order_price / 100), 'send_price_count' => "(含运费￥{$sendPrice})"],
             ];
             $goodsInfo = $priceInfo = [];
         }
